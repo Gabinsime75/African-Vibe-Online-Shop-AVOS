@@ -64,6 +64,10 @@ override.tf.json
 *.auto.tfvars
 *.auto.tfvars.json
 
+# Terraform state exports and custom backups
+**/terraform-backend-state-backup.json
+**/*tfstate*.json
+
 # Keep the provider lock file tracked
 !**/.terraform.lock.hcl
 
