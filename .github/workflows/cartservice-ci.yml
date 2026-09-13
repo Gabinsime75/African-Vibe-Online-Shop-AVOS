@@ -1,0 +1,36 @@
+name: CartService CI
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "applications/cartservice/**"
+      - ".github/workflows/cartservice-ci.yml"
+      - ".github/workflows/reusable-service-ci.yml"
+
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "applications/cartservice/**"
+      - ".github/workflows/cartservice-ci.yml"
+      - ".github/workflows/reusable-service-ci.yml"
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  cartservice:
+    uses: ./.github/workflows/reusable-service-ci.yml
+
+    with:
+      service_name: cartservice
+      service_path: applications/cartservice/src
+      runtime: dotnet
+      ecr_repository: cloudhusller-commerce-platform-dev/cartservice
+      aws_region: us-east-2
+      role_to_assume: arn:aws:iam::396913735153:role/cloudhusller-commerce-platform-dev-github-actions-ci

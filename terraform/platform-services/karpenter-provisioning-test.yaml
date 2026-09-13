@@ -1,0 +1,72 @@
+# =============================================================================
+# CloudHustler Commerce Platform - Karpenter Provisioning Test
+# =============================================================================
+# This manifest creates a temporary workload that can run only on nodes
+# provisioned by the default Karpenter NodePool.
+#
+# The deployment requests enough CPU and memory to trigger Karpenter while
+# using the NodePool's custom node label to prevent scheduling onto the
+# existing EKS managed node group.
+#
+# This workload must be deleted after validation to test node consolidation
+# and avoid unnecessary EC2 charges.
+# =============================================================================
+
+---
+# -----------------------------------------------------------------------------
+# Test Namespace
+# -----------------------------------------------------------------------------
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: karpenter-test
+  labels:
+    app.kubernetes.io/name: karpenter-provisioning-test
+    app.kubernetes.io/managed-by: kubectl
+
+---
+# -----------------------------------------------------------------------------
+# Provisioning Test Deployment
+# -----------------------------------------------------------------------------
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inflate
+  namespace: karpenter-test
+  labels:
+    app.kubernetes.io/name: inflate
+    app.kubernetes.io/component: provisioning-test
+spec:
+  replicas: 3
+
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: inflate
+
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: inflate
+        app.kubernetes.io/component: provisioning-test
+
+    spec:
+      nodeSelector:
+        node.cloudhusller.com/node-pool: default
+
+      terminationGracePeriodSeconds: 0
+
+      containers:
+        - name: inflate
+          image: registry.k8s.io/pause:3.10
+          imagePullPolicy: IfNotPresent
+
+          resources:
+            requests:
+              cpu: "1"
+              memory: "1Gi"
+
+            limits:
+              cpu: "1"
+              memory: "1Gi"

@@ -1,0 +1,112 @@
+{
+    "products": [
+        {
+            "id": "OLJCESPC7Z",
+            "name": "Sunglasses",
+            "description": "Add a modern touch to your outfits with these sleek aviator sunglasses.",
+            "picture": "/static/img/products/sunglasses.avif",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 19,
+                "nanos": 990000000
+            },
+            "categories": ["accessories"]
+        },
+        {
+            "id": "66VCHSJNUP",
+            "name": "Eldeck Shoes",
+            "description": "Stylish shoes from ELDECK.",
+            "picture": "/static/img/products/eldeck-shoes.avif",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 18,
+                "nanos": 990000000
+            },
+            "categories": ["footwear"]
+        },
+        {
+            "id": "1YMWWN1N4O",
+            "name": "King's Staff",
+            "description": "This gold-tone stainless steel King's Staff will work with most of your outfits.",
+            "picture": "/static/img/products/kings-staff.avif",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 109,
+                "nanos": 990000000
+            },
+            "categories": ["accessories"]
+        },
+        {
+            "id": "L9ECAV7KIM",
+            "name": "Shoes-open slacks crocs",
+            "description": "A neat addition to your summer wardrobe.",
+            "picture": "/static/img/products/shoes-open-slacks-crocs.avif",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 89,
+                "nanos": 990000000
+            },
+            "categories": ["footwear"]
+        },
+        {
+            "id": "2ZYFJ3GM2N",
+            "name": "Weareable double warlet leather",
+            "description": "This lightweight Weareable double warlet leather has 3 heat and speed settings. It's perfect for travel.",
+            "picture": "/static/img/products/wearable-double-wallet-leather.avif",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 24,
+                "nanos": 990000000
+            },
+            "categories": ["accessories"]
+        },
+        {
+            "id": "0PUK6V6EV0",
+            "name": "Men'S Ethnic Traditional Clothing Gold",
+            "description": "This small but intricate Men'S Ethnic Traditional Clothing Gold is an excellent gift.",
+            "picture": "/static/img/products/mens-ethnic-traditional-clothing-gold.avif",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 18,
+                "nanos": 990000000
+            },
+            "categories": ["clothing"]
+        },
+        {
+            "id": "LS4PSXUNUM",
+            "name": "Men'S Ethnic Traditional Clothing",
+            "description": "Beautiful traditional clothing for men.",
+            "picture": "/static/img/products/mens-ethnic-traditional-clothing.avif",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 18,
+                "nanos": 490000000
+            },
+            "categories": ["clothing"]
+        },
+        {
+            "id": "9SIQT8TOJO",
+            "name": "Men'S Ethnic Traditional Clothing White",
+            "description": "This Men'S Ethnic Traditional Clothing White is a beautiful addition to any wardrobe.",
+            "picture": "/static/img/products/mens-ethnic-traditional-clothing-white.avif",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 5,
+                "nanos": 490000000
+            },
+            "categories": ["clothing"]
+        },
+        {
+            "id": "6E92ZMYYFZ",
+            "name": "Traditional Tie Necklace",
+            "description": "A simple Traditional Tie Necklace with a mustard interior.",
+            "picture": "/static/img/products/traditional-tie-necklace.avif",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 8,
+                "nanos": 990000000
+            },
+            "categories": ["clothing"]
+        }
+    ]
+}

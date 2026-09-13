@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: shippingservice
+  labels:
+    app: shippingservice
+    app.kubernetes.io/name: shippingservice
+    app.kubernetes.io/part-of: cloudhusller-commerce-platform
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: shippingservice
+
+  template:
+    metadata:
+      labels:
+        app: shippingservice
+        app.kubernetes.io/name: shippingservice
+        app.kubernetes.io/part-of: cloudhusller-commerce-platform
+
+      annotations:
+        gitops-validation: "phase-8.4"
+    
+    spec:
+      containers:
+        - name: shippingservice
+
+          # Logical image name.
+          # The dev overlay replaces this with the real Amazon ECR image.
+          image: shippingservice
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: grpc
+              containerPort: 50051
+              protocol: TCP
+
+          env:
+            # gRPC listening port.
+            - name: PORT
+              value: "50051"
+            - name: ROLLBACK_VALIDATION
+              value: "version-2"
+
+          # Basic TCP readiness check for the gRPC endpoint.
+          readinessProbe:
+            tcpSocket:
+              port: grpc
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          # Restart the container if the service stops accepting connections.
+          livenessProbe:
+            tcpSocket:
+              port: grpc
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          # Baseline resource allocation.
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+
+            limits:
+              cpu: 500m
+              memory: 512Mi

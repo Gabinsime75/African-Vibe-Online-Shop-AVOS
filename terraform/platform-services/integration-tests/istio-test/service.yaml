@@ -1,0 +1,26 @@
+# platform-services/istio-test/service.yaml
+
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: httpbin
+  namespace: istio-test
+
+  labels:
+    app: httpbin
+    app.kubernetes.io/name: httpbin
+    app.kubernetes.io/component: integration-test
+    app.kubernetes.io/part-of: cloudhusller-commerce-platform
+
+spec:
+  type: ClusterIP
+
+  selector:
+    app: httpbin
+
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 80
+      protocol: TCP

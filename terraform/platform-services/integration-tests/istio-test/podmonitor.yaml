@@ -1,0 +1,40 @@
+# =============================================================================
+# CloudHustler Commerce Platform
+# Istio Test Workload PodMonitor
+#
+# Purpose:
+# Allows kube-prometheus-stack to scrape the merged Istio Prometheus endpoint
+# exposed by sidecar-injected workloads in the istio-test namespace.
+#
+# Port 15020 /stats/prometheus exposes the merged Istio workload telemetry
+# used for metrics such as istio_requests_total.
+# =============================================================================
+
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+
+metadata:
+  name: istio-test-workloads
+  namespace: monitoring
+
+  labels:
+    release: kube-prometheus-stack
+    app.kubernetes.io/name: istio-test-workloads
+    app.kubernetes.io/component: observability
+    app.kubernetes.io/part-of: cloudhusller-commerce-platform
+
+spec:
+  namespaceSelector:
+    matchNames:
+      - istio-test
+
+  selector:
+    matchExpressions:
+      - key: security.istio.io/tlsMode
+        operator: Exists
+
+  podMetricsEndpoints:
+    - path: /stats/prometheus
+      targetPort: 15020
+      interval: 30s
+      scrapeTimeout: 10s

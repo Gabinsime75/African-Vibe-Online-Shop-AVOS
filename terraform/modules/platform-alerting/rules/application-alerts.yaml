@@ -1,0 +1,207 @@
+# =============================================================================
+# CloudHustler Commerce Platform
+# Application Alerting Rules
+#
+# Purpose:
+# Provides generic application workload alerts using Kubernetes and Istio
+# telemetry. These rules monitor application availability, restart behavior,
+# HTTP failures, and service latency.
+#
+# Application-specific business alerts can be added later as the commerce
+# services are deployed.
+# =============================================================================
+
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+
+metadata:
+  name: cloudhusller-application-alerts
+  namespace: monitoring
+
+  labels:
+    release: kube-prometheus-stack
+    app.kubernetes.io/name: platform-alerting
+    app.kubernetes.io/component: application
+    app.kubernetes.io/part-of: cloudhusller-commerce-platform
+    app.kubernetes.io/managed-by: terraform
+    environment: dev
+
+spec:
+  groups:
+
+    # -------------------------------------------------------------------------
+    # Application Availability
+    # -------------------------------------------------------------------------
+
+    - name: application.availability
+
+      rules:
+
+        - alert: ApplicationDeploymentUnavailable
+
+          expr: |
+            (
+              kube_deployment_spec_replicas{
+                namespace!~"kube-system|monitoring|logging|observability|istio-system|istio-ingress"
+              }
+              -
+              kube_deployment_status_replicas_available{
+                namespace!~"kube-system|monitoring|logging|observability|istio-system|istio-ingress"
+              }
+            ) > 0
+
+          for: 10m
+
+          labels:
+            severity: critical
+            category: availability
+
+          annotations:
+            summary: Application deployment has unavailable replicas.
+            description: >
+              Deployment {{ $labels.namespace }}/{{ $labels.deployment }}
+              has fewer available replicas than desired.
+
+        - alert: ApplicationPodNotReady
+
+          expr: |
+            kube_pod_status_ready{
+              namespace!~"kube-system|monitoring|logging|observability|istio-system|istio-ingress",
+              condition="true"
+            } == 0
+
+          for: 10m
+
+          labels:
+            severity: warning
+            category: availability
+
+          annotations:
+            summary: Application pod is not ready.
+            description: >
+              Pod {{ $labels.namespace }}/{{ $labels.pod }}
+              has remained not ready for more than ten minutes.
+
+    # -------------------------------------------------------------------------
+    # Application Stability
+    # -------------------------------------------------------------------------
+
+    - name: application.stability
+
+      rules:
+
+        - alert: ApplicationContainerRestartingFrequently
+
+          expr: |
+            increase(
+              kube_pod_container_status_restarts_total{
+                namespace!~"kube-system|monitoring|logging|observability|istio-system|istio-ingress"
+              }[15m]
+            ) > 5
+
+          for: 5m
+
+          labels:
+            severity: warning
+            category: stability
+
+          annotations:
+            summary: Application container restarting frequently.
+            description: >
+              Container {{ $labels.container }} in pod
+              {{ $labels.namespace }}/{{ $labels.pod }}
+              restarted more than five times during the last 15 minutes.
+
+    # -------------------------------------------------------------------------
+    # Application HTTP Errors
+    # -------------------------------------------------------------------------
+
+    - name: application.http
+
+      rules:
+
+        - alert: ApplicationHighHTTP5xxRate
+
+          expr: |
+            (
+              sum by(
+                destination_workload,
+                destination_workload_namespace
+              )(
+                rate(
+                  istio_requests_total{
+                    response_code=~"5..",
+                    destination_workload!="unknown",
+                    destination_workload_namespace!~"kube-system|monitoring|logging|observability|istio-system|istio-ingress"
+                  }[5m]
+                )
+              )
+              /
+              clamp_min(
+                sum by(
+                  destination_workload,
+                  destination_workload_namespace
+                )(
+                  rate(
+                    istio_requests_total{
+                      destination_workload!="unknown",
+                      destination_workload_namespace!~"kube-system|monitoring|logging|observability|istio-system|istio-ingress"
+                    }[5m]
+                  )
+                ),
+                0.001
+              )
+            ) * 100 > 5
+
+          for: 5m
+
+          labels:
+            severity: warning
+            category: errors
+
+          annotations:
+            summary: Application HTTP 5xx rate is high.
+            description: >
+              Workload {{ $labels.destination_workload_namespace }}/
+              {{ $labels.destination_workload }}
+              is returning more than five percent HTTP 5xx responses.
+
+    # -------------------------------------------------------------------------
+    # Application Latency
+    # -------------------------------------------------------------------------
+
+    - name: application.latency
+
+      rules:
+
+        - alert: ApplicationHighP95Latency
+
+          expr: |
+            histogram_quantile(
+              0.95,
+              sum by(
+                le,
+                destination_workload,
+                destination_workload_namespace
+              )(
+                rate(
+                  istio_request_duration_milliseconds_bucket{
+                    destination_workload!="unknown",
+                    destination_workload_namespace!~"kube-system|monitoring|logging|observability|istio-system|istio-ingress"
+                  }[5m]
+                )
+              )
+            ) / 1000 > 1
+
+          for: 10m
+
+          labels:
+            severity: warning
+            category: latency
+
+          annotations:
+            summary: Application P95 latency is high.
+            description: >
+              Workload {{ $labels.destination_workload_namespace }}/
+              {{ $labels.destination_workload }}
+              has exceeded one second P95 latency.

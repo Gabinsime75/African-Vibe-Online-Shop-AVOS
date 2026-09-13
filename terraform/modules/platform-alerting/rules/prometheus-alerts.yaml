@@ -1,0 +1,364 @@
+# =============================================================================
+# CloudHustler Commerce Platform
+# Prometheus Alerting Rules
+#
+# Purpose:
+# Monitors Prometheus availability, scrape-target health, configuration reloads,
+# rule evaluation, Alertmanager delivery, TSDB integrity, and scrape quality.
+#
+# These rules protect the monitoring layer itself so failures in the
+# observability stack are detected quickly.
+# =============================================================================
+
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+
+metadata:
+  name: cloudhusller-prometheus-alerts
+  namespace: monitoring
+
+  labels:
+    release: kube-prometheus-stack
+    app.kubernetes.io/name: platform-alerting
+    app.kubernetes.io/component: prometheus
+    app.kubernetes.io/part-of: cloudhusller-commerce-platform
+    app.kubernetes.io/managed-by: terraform
+    environment: dev
+
+spec:
+  groups:
+
+    # -------------------------------------------------------------------------
+    # Prometheus Availability
+    # -------------------------------------------------------------------------
+
+    - name: prometheus.availability
+
+      rules:
+
+        - alert: PrometheusTargetDown
+
+          expr: |
+            up == 0
+
+          for: 5m
+
+          labels:
+            severity: critical
+            service: prometheus
+            category: availability
+
+          annotations:
+            summary: Prometheus scrape target unavailable.
+            description: >
+              Prometheus target {{ $labels.job }} on
+              {{ $labels.instance }} has been unavailable
+              for more than five minutes.
+
+        - alert: PrometheusConfigurationReloadFailed
+
+          expr: |
+            prometheus_config_last_reload_successful == 0
+
+          for: 5m
+
+          labels:
+            severity: critical
+            service: prometheus
+            category: configuration
+
+          annotations:
+            summary: Prometheus configuration reload failed.
+            description: >
+              Prometheus failed to reload its configuration successfully.
+              Review the Prometheus configuration and operator logs.
+
+    # -------------------------------------------------------------------------
+    # Prometheus Rule Evaluation
+    # -------------------------------------------------------------------------
+
+    - name: prometheus.rules
+
+      rules:
+
+        - alert: PrometheusRuleEvaluationFailures
+
+          expr: |
+            increase(
+              prometheus_rule_evaluation_failures_total[5m]
+            ) > 0
+
+          for: 5m
+
+          labels:
+            severity: warning
+            service: prometheus
+            category: rules
+
+          annotations:
+            summary: Prometheus rule evaluation failures detected.
+            description: >
+              Prometheus experienced one or more recording or alerting
+              rule evaluation failures during the last five minutes.
+
+        - alert: PrometheusRuleGroupEvaluationSlow
+
+          expr: |
+            prometheus_rule_group_last_duration_seconds
+            >
+            prometheus_rule_group_interval_seconds
+
+          for: 10m
+
+          labels:
+            severity: warning
+            service: prometheus
+            category: rules
+
+          annotations:
+            summary: Prometheus rule group evaluation is too slow.
+            description: >
+              Rule group {{ $labels.rule_group }} is taking longer
+              to evaluate than its configured evaluation interval.
+
+    # -------------------------------------------------------------------------
+    # Alertmanager Delivery
+    # -------------------------------------------------------------------------
+
+    - name: prometheus.notifications
+
+      rules:
+
+        - alert: PrometheusNotificationsFailing
+
+          expr: |
+            sum(
+              rate(
+                prometheus_notifications_errors_total[5m]
+              )
+            ) > 0
+
+          for: 5m
+
+          labels:
+            severity: warning
+            service: prometheus
+            category: alerting
+
+          annotations:
+            summary: Prometheus alert notifications are failing.
+            description: >
+              Prometheus is experiencing errors while delivering
+              notifications to Alertmanager.
+
+        - alert: PrometheusAlertmanagerUnavailable
+
+          expr: |
+            max(
+              prometheus_notifications_alertmanagers_discovered
+            ) == 0
+
+          for: 5m
+
+          labels:
+            severity: critical
+            service: prometheus
+            category: alerting
+
+          annotations:
+            summary: Prometheus cannot discover Alertmanager.
+            description: >
+              Prometheus currently has no Alertmanager instances available
+              for alert notification delivery.
+
+    # -------------------------------------------------------------------------
+    # TSDB Integrity
+    # -------------------------------------------------------------------------
+
+    - name: prometheus.tsdb
+
+      rules:
+
+        - alert: PrometheusWALCorruption
+
+          expr: |
+            increase(
+              prometheus_tsdb_wal_corruptions_total[5m]
+            ) > 0
+
+          for: 1m
+
+          labels:
+            severity: critical
+            service: prometheus
+            category: storage
+
+          annotations:
+            summary: Prometheus WAL corruption detected.
+            description: >
+              Prometheus detected corruption in its Write-Ahead Log.
+              Immediate investigation is required.
+
+        - alert: PrometheusTSDBReloadFailure
+
+          expr: |
+            increase(
+              prometheus_tsdb_reloads_failures_total[5m]
+            ) > 0
+
+          for: 5m
+
+          labels:
+            severity: warning
+            service: prometheus
+            category: storage
+
+          annotations:
+            summary: Prometheus TSDB reload failure detected.
+            description: >
+              Prometheus experienced one or more TSDB reload failures
+              during the last five minutes.
+
+    # -------------------------------------------------------------------------
+    # Scrape Quality
+    # -------------------------------------------------------------------------
+
+    - name: prometheus.scraping
+
+      rules:
+
+        - alert: PrometheusOutOfOrderSamples
+
+          expr: |
+            sum by(job)(
+              rate(
+                prometheus_target_scrapes_sample_out_of_order_total[5m]
+              )
+            ) > 0
+
+          for: 5m
+
+          labels:
+            severity: warning
+            service: prometheus
+            category: scraping
+
+          annotations:
+            summary: Prometheus is receiving out-of-order samples.
+            description: >
+              Job {{ $labels.job }} is sending samples whose timestamps
+              are older than previously ingested samples.
+
+        - alert: PrometheusDuplicateSamples
+
+          expr: |
+            sum by(job)(
+              rate(
+                prometheus_target_scrapes_sample_duplicate_timestamp_total[5m]
+              )
+            ) > 0
+
+          for: 5m
+
+          labels:
+            severity: warning
+            service: prometheus
+            category: scraping
+
+          annotations:
+            summary: Prometheus is receiving duplicate samples.
+            description: >
+              Job {{ $labels.job }} is sending duplicate samples
+              with identical timestamps.
+
+        - alert: PrometheusScrapeDurationHigh
+
+          expr: |
+            (
+              scrape_duration_seconds
+              /
+              scrape_interval_seconds
+            ) > 0.80
+
+          for: 10m
+
+          labels:
+            severity: warning
+            service: prometheus
+            category: scraping
+
+          annotations:
+            summary: Prometheus scrape duration is high.
+            description: >
+              Target {{ $labels.job }} on {{ $labels.instance }}
+              is using more than 80 percent of its scrape interval.
+
+    # -------------------------------------------------------------------------
+    # Prometheus Resource Health
+    # -------------------------------------------------------------------------
+
+    - name: prometheus.resources
+
+      rules:
+
+        - alert: PrometheusPersistentVolumeAlmostFull
+
+          expr: |
+            (
+              1 -
+              (
+                kubelet_volume_stats_available_bytes{
+                  namespace="monitoring",
+                  persistentvolumeclaim=~"prometheus-.*"
+                }
+                /
+                kubelet_volume_stats_capacity_bytes{
+                  namespace="monitoring",
+                  persistentvolumeclaim=~"prometheus-.*"
+                }
+              )
+            ) * 100 > 80
+
+          for: 10m
+
+          labels:
+            severity: warning
+            service: prometheus
+            category: storage
+
+          annotations:
+            summary: Prometheus persistent volume is nearing capacity.
+            description: >
+              Prometheus PVC {{ $labels.persistentvolumeclaim }}
+              has exceeded 80 percent utilization.
+
+        - alert: PrometheusPersistentVolumeCritical
+
+          expr: |
+            (
+              1 -
+              (
+                kubelet_volume_stats_available_bytes{
+                  namespace="monitoring",
+                  persistentvolumeclaim=~"prometheus-.*"
+                }
+                /
+                kubelet_volume_stats_capacity_bytes{
+                  namespace="monitoring",
+                  persistentvolumeclaim=~"prometheus-.*"
+                }
+              )
+            ) * 100 > 90
+
+          for: 5m
+
+          labels:
+            severity: critical
+            service: prometheus
+            category: storage
+
+          annotations:
+            summary: Prometheus persistent volume is almost full.
+            description: >
+              Prometheus PVC {{ $labels.persistentvolumeclaim }}
+              has exceeded 90 percent utilization.

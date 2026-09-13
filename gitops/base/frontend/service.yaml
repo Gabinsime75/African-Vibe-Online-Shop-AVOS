@@ -1,0 +1,32 @@
+# ==================================================================================================================
+# Creates a stable internal Kubernetes Service for the frontend pods. It uses ClusterIP because external traffic is 
+# already handled by CloudFront, the ALB, and Istio Ingress.
+# ==================================================================================================================
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: frontend
+  labels:
+    app: frontend
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/part-of: cloudhusller-commerce-platform
+
+spec:
+  # Internal-only service.
+  # External traffic enters through the existing ALB and Istio ingress path.
+  type: ClusterIP
+
+  selector:
+    app: frontend
+
+  ports:
+    - name: http
+
+      # Port exposed inside the Kubernetes cluster.
+      port: 80
+
+      # Routes traffic to the named container port "http" on the frontend pod.
+      targetPort: http
+
+      protocol: TCP

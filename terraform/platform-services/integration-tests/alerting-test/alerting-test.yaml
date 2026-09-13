@@ -1,0 +1,38 @@
+# =============================================================================
+# CloudHustler Commerce Platform
+# Prometheus → Alertmanager Integration Test
+#
+# Purpose:
+# Creates a deterministic Prometheus alert to validate the complete alerting
+# pipeline from PrometheusRule through Prometheus to Alertmanager.
+#
+# This resource is temporary and should be deleted after validation.
+# =============================================================================
+
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: cloudhusller-alerting-integration-test
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+    app.kubernetes.io/name: cloudhusller-alerting-test
+    app.kubernetes.io/part-of: cloudhusller-commerce-platform
+
+spec:
+  groups:
+    - name: cloudhusller.integration-test
+      rules:
+
+        - alert: CloudHustlerAlertingPipelineTest
+          expr: vector(1)
+          for: 1m
+
+          labels:
+            severity: warning
+            environment: dev
+            component: observability
+
+          annotations:
+            summary: "CloudHustler alerting pipeline integration test"
+            description: "Temporary alert validating PrometheusRule → Prometheus → Alertmanager."

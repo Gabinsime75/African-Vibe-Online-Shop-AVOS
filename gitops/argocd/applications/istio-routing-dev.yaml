@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: istio-routing-dev
+  namespace: argocd
+
+spec:
+  project: cloudhusller-dev
+
+  source:
+    repoURL: https://github.com/Gabinsime75/CloudHustler-Commerce-Platform.git
+    targetRevision: main
+    path: gitops/overlays/dev/istio-routing
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cloudhusller-dev
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+
+  revisionHistoryLimit: 10

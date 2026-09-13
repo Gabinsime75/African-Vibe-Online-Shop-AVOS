@@ -1,0 +1,35 @@
+name: Currency Service CI
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "applications/currencyservice/**"
+      - ".github/workflows/currencyservice-ci.yml"
+      - ".github/workflows/reusable-service-ci.yml"
+
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "applications/currencyservice/**"
+      - ".github/workflows/currencyservice-ci.yml"
+      - ".github/workflows/reusable-service-ci.yml"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  currencyservice:
+    uses: ./.github/workflows/reusable-service-ci.yml
+
+    with:
+      service_name: currencyservice
+      service_path: applications/currencyservice
+      runtime: node
+      aws_region: us-east-2
+      ecr_repository: cloudhusller-commerce-platform-dev/currencyservice
+      role_to_assume: arn:aws:iam::396913735153:role/cloudhusller-commerce-platform-dev-github-actions-ci
+
+    secrets: inherit

@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cloudhusller-dev-apps
+  namespace: argocd
+
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/Gabinsime75/CloudHustler-Commerce-Platform.git
+    targetRevision: main
+    path: gitops/argocd/applications
+
+    directory:
+      recurse: false
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+
+    syncOptions:
+      - ApplyOutOfSyncOnly=true
+
+  revisionHistoryLimit: 10

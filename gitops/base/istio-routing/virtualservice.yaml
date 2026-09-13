@@ -1,0 +1,19 @@
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: frontend
+  namespace: cloudhusller-dev
+spec:
+  hosts:
+    - cloudhusller.com
+    - www.cloudhusller.com
+
+  gateways:
+    - cloudhusller-gateway
+
+  http:
+    - route:
+        - destination:
+            host: frontend.cloudhusller-dev.svc.cluster.local
+            port:
+              number: 80

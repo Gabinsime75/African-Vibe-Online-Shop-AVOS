@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: paymentservice
+  labels:
+    app: paymentservice
+    app.kubernetes.io/name: paymentservice
+    app.kubernetes.io/part-of: cloudhusller-commerce-platform
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: paymentservice
+
+  template:
+    metadata:
+      labels:
+        app: paymentservice
+        app.kubernetes.io/name: paymentservice
+        app.kubernetes.io/part-of: cloudhusller-commerce-platform
+
+    spec:
+      containers:
+        - name: paymentservice
+
+          # Logical image name.
+          # The dev overlay replaces this with the real Amazon ECR image.
+          image: paymentservice
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: grpc
+              containerPort: 50051
+              protocol: TCP
+
+          env:
+            # gRPC listening port.
+            - name: PORT
+              value: "50051"
+
+          # Basic readiness check for the gRPC endpoint.
+          readinessProbe:
+            tcpSocket:
+              port: grpc
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          # Restart the container if the service stops accepting connections.
+          livenessProbe:
+            tcpSocket:
+              port: grpc
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          # Baseline resource allocation.
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+
+            limits:
+              cpu: 500m
+              memory: 512Mi

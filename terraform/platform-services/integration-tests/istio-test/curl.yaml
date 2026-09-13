@@ -1,0 +1,48 @@
+# platform-services/istio-test/curl.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: curl
+  namespace: istio-test
+
+  labels:
+    app: curl
+    app.kubernetes.io/name: curl
+    app.kubernetes.io/component: integration-test
+    app.kubernetes.io/part-of: cloudhusller-commerce-platform
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: curl
+
+  template:
+    metadata:
+      labels:
+        app: curl
+
+    spec:
+      containers:
+        - name: curl
+          image: curlimages/curl:latest
+
+          command:
+            - /bin/sh
+            - -c
+            - |
+              while true; do
+                curl -s http://httpbin.istio-test.svc.cluster.local:8000/get > /dev/null
+                sleep 2
+              done
+
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi

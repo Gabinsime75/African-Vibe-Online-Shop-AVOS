@@ -1,0 +1,89 @@
+# ==================================================================================================================
+# Defines the reusable, environment-independent Kubernetes Deployment for the frontend service. It sets the pod labels, 
+# container port, service dependencies, health probes, and resource requests/limits. The image name stays generic here 
+# because the dev overlay will replace it with the real ECR image and SHA tag.
+# ==================================================================================================================
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: frontend
+  labels:
+    app: frontend
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/part-of: cloudhusller-commerce-platform
+
+spec:
+  selector:
+    matchLabels:
+      app: frontend
+
+  template:
+    metadata:
+      labels:
+        app: frontend
+        app.kubernetes.io/name: frontend
+        app.kubernetes.io/part-of: cloudhusller-commerce-platform
+    spec:
+      containers:
+        - name: frontend
+          # Logical image name only.
+          # Kustomize will replace this with the real Amazon ECR image.
+          image: frontend
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            # Frontend application listening port.
+            - name: PORT
+              value: "8080"
+            # Kubernetes DNS service names used for internal service-to-service communication.
+            - name: PRODUCT_CATALOG_SERVICE_ADDR
+              value: "productcatalogservice:3550"
+            - name: CURRENCY_SERVICE_ADDR
+              value: "currencyservice:7000"
+            - name: CART_SERVICE_ADDR
+              value: "cartservice:7070"
+            - name: RECOMMENDATION_SERVICE_ADDR
+              value: "recommendationservice:8080"
+            - name: SHIPPING_SERVICE_ADDR
+              value: "shippingservice:50051"
+            - name: CHECKOUT_SERVICE_ADDR
+              value: "checkoutservice:5050"
+            - name: AD_SERVICE_ADDR
+              value: "adservice:9555"
+            - name: SHOPPING_ASSISTANT_SERVICE_ADDR
+              value: "shoppingassistantservice:80"
+
+          # Determines when Kubernetes should begin sending traffic to the pod.
+          readinessProbe:
+            httpGet:
+              path: /_healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          # Detects whether the application has become unhealthy and needs restarting.
+          livenessProbe:
+            httpGet:
+              path: /_healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          # Baseline resource requests and limits.
+          # These can be tuned later based on Prometheus/CloudWatch metrics.
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+
+            limits:
+              cpu: 500m
+              memory: 512Mi

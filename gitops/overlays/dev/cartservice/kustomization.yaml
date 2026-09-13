@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: cloudhusller-dev
+
+resources:
+  - ../../../base/cartservice
+
+labels:
+  - pairs:
+      environment: dev
+
+images:
+  - name: cartservice
+    newName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/cloudhusller-commerce-platform-dev/cartservice
+    newTag: 0ee7c36fa3b9

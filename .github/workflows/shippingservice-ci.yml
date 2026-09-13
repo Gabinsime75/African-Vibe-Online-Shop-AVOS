@@ -1,0 +1,36 @@
+name: Shipping Service CI
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "applications/shippingservice/**"
+      - ".github/workflows/shippingservice-ci.yml"
+      - ".github/workflows/reusable-service-ci.yml"
+
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "applications/shippingservice/**"
+      - ".github/workflows/shippingservice-ci.yml"
+      - ".github/workflows/reusable-service-ci.yml"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  shippingservice:
+    uses: ./.github/workflows/reusable-service-ci.yml
+
+    with:
+      service_name: shippingservice
+      service_path: applications/shippingservice
+      runtime: go
+      aws_region: us-east-2
+      ecr_repository: cloudhusller-commerce-platform-dev/shippingservice
+      role_to_assume: arn:aws:iam::396913735153:role/cloudhusller-commerce-platform-dev-github-actions-ci
+
+    secrets: inherit

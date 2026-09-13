@@ -1,0 +1,279 @@
+# =============================================================================
+# CloudHustler Commerce Platform
+# OpenTelemetry Collector Alerting Rules
+#
+# Purpose:
+# Monitors OpenTelemetry Collector availability, telemetry receiver health,
+# exporter failures, queue pressure, pod restarts, and resource utilization.
+# =============================================================================
+
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+
+metadata:
+  name: cloudhusller-opentelemetry-alerts
+  namespace: monitoring
+
+  labels:
+    release: kube-prometheus-stack
+    app.kubernetes.io/name: platform-alerting
+    app.kubernetes.io/component: telemetry
+    app.kubernetes.io/part-of: cloudhusller-commerce-platform
+    app.kubernetes.io/managed-by: terraform
+    environment: dev
+
+spec:
+  groups:
+
+    # -------------------------------------------------------------------------
+    # Collector Availability
+    # -------------------------------------------------------------------------
+
+    - name: opentelemetry.availability
+
+      rules:
+
+        - alert: OpenTelemetryCollectorDown
+
+          expr: |
+            max(
+              up{
+                namespace="observability",
+                job=~".*opentelemetry.*"
+              }
+            ) == 0
+
+          for: 5m
+
+          labels:
+            severity: critical
+            service: opentelemetry
+            category: availability
+
+          annotations:
+            summary: OpenTelemetry Collector is unavailable.
+            description: >
+              Prometheus has been unable to scrape the OpenTelemetry
+              Collector for more than five minutes.
+
+        - alert: OpenTelemetryCollectorReplicaUnavailable
+
+          expr: |
+            kube_deployment_status_replicas_available{
+              namespace="observability",
+              deployment="opentelemetry-collector"
+            }
+            <
+            kube_deployment_spec_replicas{
+              namespace="observability",
+              deployment="opentelemetry-collector"
+            }
+
+          for: 5m
+
+          labels:
+            severity: critical
+            service: opentelemetry
+            category: availability
+
+          annotations:
+            summary: OpenTelemetry Collector replica unavailable.
+            description: >
+              The OpenTelemetry Collector Deployment has fewer available
+              replicas than requested.
+
+    # -------------------------------------------------------------------------
+    # Receiver Health
+    # -------------------------------------------------------------------------
+
+    - name: opentelemetry.receivers
+
+      rules:
+
+        - alert: OpenTelemetryReceiverRefusingSpans
+
+          expr: |
+            sum by(receiver)(
+              rate(
+                otelcol_receiver_refused_spans[5m]
+              )
+            ) > 0
+
+          for: 5m
+
+          labels:
+            severity: warning
+            service: opentelemetry
+            category: receiver
+
+          annotations:
+            summary: OpenTelemetry receiver is refusing spans.
+            description: >
+              Receiver {{ $labels.receiver }} is refusing trace spans.
+
+        - alert: OpenTelemetryReceiverRefusingMetrics
+
+          expr: |
+            sum by(receiver)(
+              rate(
+                otelcol_receiver_refused_metric_points[5m]
+              )
+            ) > 0
+
+          for: 5m
+
+          labels:
+            severity: warning
+            service: opentelemetry
+            category: receiver
+
+          annotations:
+            summary: OpenTelemetry receiver is refusing metrics.
+            description: >
+              Receiver {{ $labels.receiver }} is refusing metric points.
+
+    # -------------------------------------------------------------------------
+    # Exporter Health
+    # -------------------------------------------------------------------------
+
+    - name: opentelemetry.exporters
+
+      rules:
+
+        - alert: OpenTelemetryExporterSpanFailures
+
+          expr: |
+            sum by(exporter)(
+              rate(
+                otelcol_exporter_send_failed_spans[5m]
+              )
+            ) > 0
+
+          for: 5m
+
+          labels:
+            severity: warning
+            service: opentelemetry
+            category: exporter
+
+          annotations:
+            summary: OpenTelemetry exporter span failures detected.
+            description: >
+              Exporter {{ $labels.exporter }} is failing to deliver spans.
+
+        - alert: OpenTelemetryExporterMetricFailures
+
+          expr: |
+            sum by(exporter)(
+              rate(
+                otelcol_exporter_send_failed_metric_points[5m]
+              )
+            ) > 0
+
+          for: 5m
+
+          labels:
+            severity: warning
+            service: opentelemetry
+            category: exporter
+
+          annotations:
+            summary: OpenTelemetry exporter metric failures detected.
+            description: >
+              Exporter {{ $labels.exporter }}
+              is failing to deliver metric points.
+
+        - alert: OpenTelemetryExporterQueueHigh
+
+          expr: |
+            (
+              otelcol_exporter_queue_size
+              /
+              clamp_min(
+                otelcol_exporter_queue_capacity,
+                1
+              )
+            ) > 0.80
+
+          for: 10m
+
+          labels:
+            severity: warning
+            service: opentelemetry
+            category: exporter
+
+          annotations:
+            summary: OpenTelemetry exporter queue utilization is high.
+            description: >
+              Exporter {{ $labels.exporter }}
+              queue utilization has exceeded 80 percent.
+
+    # -------------------------------------------------------------------------
+    # Collector Runtime
+    # -------------------------------------------------------------------------
+
+    - name: opentelemetry.runtime
+
+      rules:
+
+        - alert: OpenTelemetryCollectorRestartingFrequently
+
+          expr: |
+            increase(
+              kube_pod_container_status_restarts_total{
+                namespace="observability",
+                pod=~"opentelemetry-collector-.*"
+              }[15m]
+            ) > 3
+
+          for: 5m
+
+          labels:
+            severity: warning
+            service: opentelemetry
+            category: runtime
+
+          annotations:
+            summary: OpenTelemetry Collector restarting frequently.
+            description: >
+              Collector pod {{ $labels.pod }} has restarted
+              more than three times during the last 15 minutes.
+
+        - alert: OpenTelemetryCollectorHighMemory
+
+          expr: |
+            (
+              sum(
+                container_memory_working_set_bytes{
+                  namespace="observability",
+                  pod=~"opentelemetry-collector-.*",
+                  container="opentelemetry-collector"
+                }
+              )
+              /
+              clamp_min(
+                sum(
+                  kube_pod_container_resource_limits{
+                    namespace="observability",
+                    pod=~"opentelemetry-collector-.*",
+                    container="opentelemetry-collector",
+                    resource="memory",
+                    unit="byte"
+                  }
+                ),
+                1
+              )
+            ) > 0.85
+
+          for: 10m
+
+          labels:
+            severity: warning
+            service: opentelemetry
+            category: resources
+
+          annotations:
+            summary: OpenTelemetry Collector memory utilization is high.
+            description: >
+              Collector memory utilization has exceeded 85 percent
+              of its configured Kubernetes limit.

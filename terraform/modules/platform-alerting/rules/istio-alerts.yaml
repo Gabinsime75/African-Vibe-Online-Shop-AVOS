@@ -1,0 +1,270 @@
+# =============================================================================
+# CloudHustler Commerce Platform
+# Istio Alerting Rules
+#
+# Purpose:
+# Monitors Istio control-plane health, ingress availability, service-mesh
+# HTTP error rates, latency, traffic, and proxy connectivity.
+# =============================================================================
+
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+
+metadata:
+  name: cloudhusller-istio-alerts
+  namespace: monitoring
+
+  labels:
+    release: kube-prometheus-stack
+    app.kubernetes.io/name: platform-alerting
+    app.kubernetes.io/component: service-mesh
+    app.kubernetes.io/part-of: cloudhusller-commerce-platform
+    app.kubernetes.io/managed-by: terraform
+    environment: dev
+
+spec:
+  groups:
+
+    # -------------------------------------------------------------------------
+    # Istio Control Plane
+    # -------------------------------------------------------------------------
+
+    - name: istio.control-plane
+
+      rules:
+
+        - alert: IstiodDown
+
+          expr: |
+            max(
+              up{
+                namespace="istio-system",
+                job=~".*istiod.*"
+              }
+            ) == 0
+
+          for: 5m
+
+          labels:
+            severity: critical
+            service: istiod
+            category: availability
+
+          annotations:
+            summary: Istiod is unavailable.
+            description: >
+              Prometheus has been unable to scrape Istiod
+              for more than five minutes.
+
+        - alert: IstiodReplicaUnavailable
+
+          expr: |
+            kube_deployment_status_replicas_available{
+              namespace="istio-system",
+              deployment=~"istiod.*"
+            }
+            <
+            kube_deployment_spec_replicas{
+              namespace="istio-system",
+              deployment=~"istiod.*"
+            }
+
+          for: 5m
+
+          labels:
+            severity: critical
+            service: istiod
+            category: availability
+
+          annotations:
+            summary: Istiod replica unavailable.
+            description: >
+              Istiod has fewer available replicas than requested.
+
+    # -------------------------------------------------------------------------
+    # Istio Ingress Gateway
+    # -------------------------------------------------------------------------
+
+    - name: istio.ingress
+
+      rules:
+
+        - alert: IstioIngressGatewayUnavailable
+
+          expr: |
+            kube_deployment_status_replicas_available{
+              namespace="istio-ingress",
+              deployment=~"istio-ingress.*"
+            }
+            <
+            kube_deployment_spec_replicas{
+              namespace="istio-ingress",
+              deployment=~"istio-ingress.*"
+            }
+
+          for: 5m
+
+          labels:
+            severity: critical
+            service: istio-ingress
+            category: availability
+
+          annotations:
+            summary: Istio ingress gateway unavailable.
+            description: >
+              The Istio ingress gateway has fewer available
+              replicas than requested.
+
+    # -------------------------------------------------------------------------
+    # Mesh Traffic
+    # -------------------------------------------------------------------------
+
+    - name: istio.traffic
+
+      rules:
+
+        - alert: IstioHighHTTP5xxRate
+
+          expr: |
+            (
+              sum(
+                rate(
+                  istio_requests_total{
+                    response_code=~"5.."
+                  }[5m]
+                )
+              )
+              /
+              clamp_min(
+                sum(
+                  rate(
+                    istio_requests_total[5m]
+                  )
+                ),
+                0.001
+              )
+            ) * 100 > 5
+
+          for: 5m
+
+          labels:
+            severity: warning
+            service: istio
+            category: traffic
+
+          annotations:
+            summary: Istio service mesh HTTP 5xx rate is high.
+            description: >
+              More than five percent of mesh requests are returning
+              HTTP 5xx responses.
+
+        - alert: IstioServiceHighHTTP5xxRate
+
+          expr: |
+            (
+              sum by(
+                destination_service_name,
+                destination_service_namespace
+              )(
+                rate(
+                  istio_requests_total{
+                    response_code=~"5..",
+                    destination_service_name!="unknown"
+                  }[5m]
+                )
+              )
+              /
+              clamp_min(
+                sum by(
+                  destination_service_name,
+                  destination_service_namespace
+                )(
+                  rate(
+                    istio_requests_total{
+                      destination_service_name!="unknown"
+                    }[5m]
+                  )
+                ),
+                0.001
+              )
+            ) * 100 > 5
+
+          for: 5m
+
+          labels:
+            severity: warning
+            service: istio
+            category: traffic
+
+          annotations:
+            summary: Istio service has a high HTTP 5xx rate.
+            description: >
+              Service {{ $labels.destination_service_namespace }}/
+              {{ $labels.destination_service_name }}
+              is returning more than five percent HTTP 5xx responses.
+
+    # -------------------------------------------------------------------------
+    # Mesh Latency
+    # -------------------------------------------------------------------------
+
+    - name: istio.latency
+
+      rules:
+
+        - alert: IstioHighP95Latency
+
+          expr: |
+            histogram_quantile(
+              0.95,
+              sum by(le)(
+                rate(
+                  istio_request_duration_milliseconds_bucket[5m]
+                )
+              )
+            ) / 1000 > 1
+
+          for: 10m
+
+          labels:
+            severity: warning
+            service: istio
+            category: latency
+
+          annotations:
+            summary: Istio mesh P95 latency is high.
+            description: >
+              Mesh-wide P95 latency has exceeded one second
+              for at least ten minutes.
+
+        - alert: IstioServiceHighP95Latency
+
+          expr: |
+            histogram_quantile(
+              0.95,
+              sum by(
+                le,
+                destination_service_name,
+                destination_service_namespace
+              )(
+                rate(
+                  istio_request_duration_milliseconds_bucket{
+                    destination_service_name!="unknown"
+                  }[5m]
+                )
+              )
+            ) / 1000 > 1
+
+          for: 10m
+
+          labels:
+            severity: warning
+            service: istio
+            category: latency
+
+          annotations:
+            summary: Istio service P95 latency is high.
+            description: >
+              Service {{ $labels.destination_service_namespace }}/
+              {{ $labels.destination_service_name }}
+              has exceeded one second P95 latency.
+

@@ -1,0 +1,42 @@
+# platform-services/istio-test/deployment.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: httpbin
+  namespace: istio-test
+  labels:
+    app: httpbin
+    app.kubernetes.io/name: httpbin
+    app.kubernetes.io/component: integration-test
+    app.kubernetes.io/part-of: cloudhusller-commerce-platform
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: httpbin
+
+  template:
+    metadata:
+      labels:
+        app: httpbin
+        version: v1
+
+    spec:
+      containers:
+        - name: httpbin
+          image: kennethreitz/httpbin:latest
+
+          ports:
+            - name: http
+              containerPort: 80
+
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi

@@ -1,0 +1,36 @@
+name: Payment Service CI
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "applications/paymentservice/**"
+      - ".github/workflows/paymentservice-ci.yml"
+      - ".github/workflows/reusable-service-ci.yml"
+
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "applications/paymentservice/**"
+      - ".github/workflows/paymentservice-ci.yml"
+      - ".github/workflows/reusable-service-ci.yml"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  paymentservice:
+    uses: ./.github/workflows/reusable-service-ci.yml
+
+    with:
+      service_name: paymentservice
+      service_path: applications/paymentservice
+      runtime: node
+      aws_region: us-east-2
+      ecr_repository: cloudhusller-commerce-platform-dev/paymentservice
+      role_to_assume: arn:aws:iam::396913735153:role/cloudhusller-commerce-platform-dev-github-actions-ci
+
+    secrets: inherit

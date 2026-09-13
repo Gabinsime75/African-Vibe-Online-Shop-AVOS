@@ -1,0 +1,25 @@
+# ==================================================================================================================
+# creates the internal ClusterIP endpoint used by other services to reach checkoutservice.
+# ==================================================================================================================
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: checkoutservice
+  labels:
+    app: checkoutservice
+    app.kubernetes.io/name: checkoutservice
+    app.kubernetes.io/part-of: cloudhusller-commerce-platform
+
+spec:
+  # Internal service only.
+  type: ClusterIP
+
+  selector:
+    app: checkoutservice
+
+  ports:
+    - name: grpc
+      port: 5050
+      targetPort: grpc
+      protocol: TCP

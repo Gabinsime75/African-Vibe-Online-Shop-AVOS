@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+
+metadata:
+  name: cloudhusller-dev
+  namespace: argocd
+
+spec:
+  description: CloudHustler Commerce Platform development environment
+
+  sourceRepos:
+    - "https://github.com/Gabinsime75/CloudHustler-Commerce-Platform.git"
+
+  destinations:
+    - namespace: cloudhusller-dev
+      server: https://kubernetes.default.svc
+
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+
+  # Allow Argo CD to create only Namespace as a
+  # cluster-scoped resource.
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace

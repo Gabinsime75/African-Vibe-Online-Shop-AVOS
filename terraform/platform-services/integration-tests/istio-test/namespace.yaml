@@ -1,0 +1,7 @@
+# platform-services/istio-test/namespace.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: istio-test
+  labels:
+    istio-injection: enabled
