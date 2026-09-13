@@ -42,3 +42,51 @@ terraform.rc
 # Optional: ignore plan files saved before destroying Terraform configuration
 # Uncomment the line below if you want to ignore planout files.
 # planout
+node_modules/node_modules/
+
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+.terraform.tfstate.lock.info
+crash.log
+crash.*.log
+*.tfplan
+tfplan
+plan.out
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+*.tfpla
+
+# Terraform variable files containing secrets
+*.auto.tfvars
+*.auto.tfvars.json
+
+# Keep the provider lock file tracked
+!**/.terraform.lock.hcl
+
+# Environment and secrets
+.env
+.env.*
+*.pem
+*.key
+kubeconfig
+kubeconfig.*
+
+# Logs and temporary files
+*.log
+tmp/
+temp/
+
+# IDE and operating system
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Node.js
+node_modules/
+dist/
+coverage/node_modules/
