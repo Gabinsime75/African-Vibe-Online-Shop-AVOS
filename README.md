@@ -118,7 +118,7 @@ AVOS contains **11 business microservices**, **one testing workload**, and **one
 - Timeouts, bounded retries, circuit breaking, and outlier detection will be defined per dependency.
 
 ## AVOS gRPC service dependency map
-![alt text](https://github.com/Gabinsime75/African-Vibe-Online-Shop-AVOS/blob/main/Docs/Architectures/AVOS-gRPC-service-dependency-map.html)
+[![AVOS gRPC Service Dependency Map](docs/architecture/avos-grpc-service-dependency-map.png)](https://gabinsime75.github.io/African-Vibe-Online-Shop-AVOS/docs/architecture/avos-grpc-service-dependency-map.html)
 
 ## Identity and Access
 
