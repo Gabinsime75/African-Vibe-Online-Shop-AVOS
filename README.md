@@ -91,6 +91,7 @@ AVOS addresses these challenges through a layered AWS architecture:
 ## Microservices Architecture
 
 AVOS contains **11 business microservices**, **one testing workload**, and **one cart datastore**.
+![alt text](https://github.com/Gabinsime75/Production-Grade-GitOps-Driven-Microservices-Platform-on-AWS/blob/main/Docs1/Architecture/Applications-Architecture.png)
 
 | Service | Language | Role | Primary dependencies |
 |---|---|---|---|
