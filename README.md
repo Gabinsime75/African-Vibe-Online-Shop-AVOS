@@ -74,22 +74,6 @@ AVOS addresses these challenges through a layered AWS architecture:
 | Observability by design | Treats metrics, logs, and traces as required platform capabilities. |
 | Cost-aware scalability | Combines HPA and Karpenter so capacity follows application demand. |
 
-## Target Architecture
-
-### Customer Request Flow
-
-```mermaid
-flowchart TD
-    U[Customer] -->|HTTPS| R53[Amazon Route 53]
-    R53 --> CF[Amazon CloudFront]
-    CF --> WAF[AWS WAF]
-    WAF --> ALB[Application Load Balancer]
-    ALB --> GW[Istio Gateway API]
-    GW --> FE[Frontend on Amazon EKS]
-    FE -->|gRPC| MS[AVOS backend microservices]
-    MS --> DATA[Managed data and AI services]
-```
-
 ### Architecture Layers
 
 | Layer | Components | Role |
@@ -105,32 +89,6 @@ flowchart TD
 | Delivery | GitHub Actions, Amazon ECR, Argo CD, Kustomize, Helm | Builds artifacts and reconciles approved releases into EKS. |
 | Observability | Prometheus, Grafana, Alertmanager, Fluent Bit, Loki, OpenTelemetry, X-Ray, Kiali, CloudWatch | Correlates metrics, logs, traces, mesh health, and AWS service events. |
 | Security and governance | IAM, Pod Identity, KMS, Secrets Manager, External Secrets, CloudTrail, Config, GuardDuty, Security Hub, Organizations, SCPs | Enforces access, encryption, secret delivery, detection, audit, and organizational guardrails. |
-
-## Architecture Review Decisions
-
-The earlier platform is the implementation baseline, but AVOS will not carry every earlier design choice forward unchanged.
-
-| Decision | Component | AVOS direction | Reason |
-|---|---|---|---|
-| Keep | Amazon EKS | Continue using EKS as the container orchestration platform. | The application already consists of independently deployable containerized services. |
-| Keep | Terraform | Retain reusable modules and remote state. | Infrastructure remains reviewable and repeatable. |
-| Keep | GitHub Actions and Argo CD | Preserve the separation between CI and GitOps delivery. | CI produces trusted artifacts while Argo CD owns cluster convergence. |
-| Keep | CloudFront, WAF, and ALB | Retain the existing edge-to-cluster pattern. | It provides caching, filtering, TLS, and AWS-native ingress. |
-| Keep | Istio | Continue using Istio for the service mesh. | It supplies mTLS, traffic policy, telemetry, and progressive delivery controls. |
-| Modify | Legacy Istio Gateway and VirtualService | Adopt Gateway API resources backed by Istio. | GatewayClass, Gateway, and HTTPRoute provide a portable Kubernetes routing model. |
-| Modify | In-cluster Redis | Move production cart persistence to Amazon ElastiCache for Redis. | A managed cache improves patching, monitoring, availability, and failover. |
-| Modify | Product catalog JSON | Retain JSON for the initial baseline and move durable catalog data to the approved data platform later. | This preserves a working application while enabling incremental migration. |
-| Modify | Shopping Assistant | Replace Google dependencies with Bedrock, OpenSearch, and AWS Secrets Manager. | The assistant must align with the AWS-native AVOS architecture. |
-| Modify | Observability | Retain Prometheus, Grafana, Loki, and OpenTelemetry while tightening correlation and alert routing. | AVOS needs consistent service-level metrics, logs, and traces. |
-| Add | Amazon Cognito | Introduce customer registration, authentication, token issuance, and MFA options. | The current frontend generates anonymous sessions and has no customer identity layer. |
-| Add | Analytics pipeline | Introduce Kinesis, Firehose, S3, Glue, and Athena. | Commerce events must support reporting and future machine-learning use cases. |
-| Add | OpenSearch | Add product search, vector retrieval, and selected operational search use cases. | Search should not depend on scanning application files or databases. |
-| Add | SageMaker and Bedrock AIOps | Add anomaly analysis and incident summarization after observability is stable. | AI should consume reliable telemetry rather than replace foundational monitoring. |
-| Add | Missing GitOps and CI coverage | Add pipelines and manifests for ad, email, recommendation, shopping assistant, and load testing. | Every deployable component needs a consistent delivery path. |
-| Remove | NGINX Ingress Controller | Do not include it in the target AVOS request path. | ALB and the Istio Gateway API already cover north-south routing. |
-| Remove | Amazon API Gateway | Do not place it in the primary web request path. | The application enters through CloudFront, WAF, ALB, and Istio. |
-| Remove | Filebeat, Logstash, Elasticsearch, and Kibana | Remove them from the AVOS baseline. | Fluent Bit and Loki are the selected logging stack; OpenSearch has separate approved uses. |
-| Remove | Next.js, React, Redux, and Tailwind claims | Remove them unless the frontend is intentionally rewritten later. | The current customer-facing frontend is implemented in Go. |
 
 ## Microservices Architecture
 
