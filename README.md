@@ -19,8 +19,6 @@ African Vibe Online Shop (AVOS) is a production-oriented e-commerce platform tha
 - [Problem Statement](#problem-statement)
 - [Solution Overview](#solution-overview)
 - [Architecture Principles](#architecture-principles)
-- [Target Architecture](#target-architecture)
-- [Architecture Review Decisions](#architecture-review-decisions)
 - [Microservices Architecture](#microservices-architecture)
 - [Identity and Access](#identity-and-access)
 - [Data Platform](#data-platform)
