@@ -117,6 +117,9 @@ AVOS contains **11 business microservices**, **one testing workload**, and **one
 - Health, readiness, and liveness probes remain operational endpoints and are not business APIs.
 - Timeouts, bounded retries, circuit breaking, and outlier detection will be defined per dependency.
 
+## AVOS gRPC service dependency map
+![alt text](https://github.com/Gabinsime75/Production-Grade-GitOps-Driven-Microservices-Platform-on-AWS/blob/main/Docs1/Architecture/Applications-Architecture.png)
+
 ## Identity and Access
 
 ### Customer Identity
