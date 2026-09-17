@@ -59,6 +59,9 @@ AVOS addresses these challenges through a layered AWS architecture:
 - **Unified observability:** Metrics, logs, and traces provide end-to-end operational visibility.
 - **Analytics and AI:** Streaming data, Amazon Bedrock, SageMaker, and OpenSearch support business intelligence, customer assistance, and AIOps.
 
+## Project Architecture
+![alt text](https://github.com/Gabinsime75/African-Vibe-Online-Shop-AVOS/blob/main/Docs/Architectures/AVOS-microservices-architecture-blueprint.png)
+
 ## Architecture Principles
 
 | Principle | Role in AVOS |
