@@ -10,18 +10,19 @@ repositories {
     mavenLocal()
 }
 
-description = 'Ad Service'
-group = "adservice"
-version = "0.1.0-SNAPSHOT"
+description = 'AVOS contextual advertisement service'
+group = "com.africanvibe.avos"
+version = "1.0.0"
 
 def grpcVersion = "1.78.0"
 def jacksonCoreVersion = "2.21.0"
 def jacksonDatabindVersion = "2.21.0"
 def protocVersion = "4.33.4"
 
-tasks.withType(JavaCompile) {
+tasks.withType(JavaCompile).configureEach {
     sourceCompatibility = JavaVersion.VERSION_21
     targetCompatibility = JavaVersion.VERSION_21
+    options.encoding = 'UTF-8'
 }
 
 ext {
@@ -81,7 +82,10 @@ sourceSets {
     }
 }
 
-startScripts.enabled = false
+application {
+    mainClass.set('hipstershop.AdService')
+    applicationName = 'avos-adservice'
+}
 
 // This to cache dependencies during Docker image building. First build will take time.
 // Subsequent build will be incremental.
@@ -90,30 +94,4 @@ task downloadRepos(type: Copy) {
     into offlineCompile
     from configurations.compileClasspath
     into offlineCompile
-}
-
-task adService(type: CreateStartScripts) {
-    mainClass.set('hipstershop.AdService')
-    applicationName = 'AdService'
-    outputDir = new File(project.buildDir, 'tmp')
-    classpath = startScripts.classpath
-    // @TODO: https://github.com/GoogleCloudPlatform/microservices-demo/issues/2517
-    // defaultJvmOpts =
-    //          ["-agentpath:/opt/cprof/profiler_java_agent.so=-cprof_service=adservice,-cprof_service_version=1.0.0"]
-}
-
-task adServiceClient(type: CreateStartScripts) {
-    mainClass.set('hipstershop.AdServiceClient')
-    applicationName = 'AdServiceClient'
-    outputDir = new File(project.buildDir, 'tmp')
-    classpath = startScripts.classpath
-    // @TODO: https://github.com/GoogleCloudPlatform/microservices-demo/issues/2517
-    // defaultJvmOpts =
-    //          ["-agentpath:/opt/cprof/profiler_java_agent.so=-cprof_service=adserviceclient,-cprof_service_version=1.0.0"]
-}
-
-applicationDistribution.into('bin') {
-    from(adService)
-    from(adServiceClient)
-    fileMode = 0755
 }

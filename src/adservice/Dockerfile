@@ -19,23 +19,25 @@ WORKDIR /app
 COPY ["build.gradle", "gradlew", "./"]
 COPY gradle gradle
 RUN chmod +x gradlew
-RUN ./gradlew downloadRepos
+RUN ./gradlew --no-daemon downloadRepos
 
 COPY . .
 RUN chmod +x gradlew
-RUN ./gradlew installDist
+RUN ./gradlew --no-daemon installDist
 
 FROM eclipse-temurin:25.0.1_8-jre-alpine@sha256:b51543f89580c1ba70e441cfbc0cfc1635c3c16d2e2d77fec9d890342a3a8687
 
-# @TODO: https://github.com/GoogleCloudPlatform/microservices-demo/issues/2517
-# Download Stackdriver Profiler Java agent
-# RUN mkdir -p /opt/cprof && \
-#     wget -q -O- https://storage.googleapis.com/cloud-profiler/java/latest/profiler_java_agent_alpine.tar.gz \
-#     | tar xzv -C /opt/cprof && \
-#     rm -rf profiler_java_agent.tar.gz
+LABEL org.opencontainers.image.title="AVOS Ad Service" \
+      org.opencontainers.image.description="Contextual advertisement gRPC service for African Vibe Online Shop" \
+      org.opencontainers.image.source="https://github.com/Gabinsime75/African-Vibe-Online-Shop-AVOS"
 
 WORKDIR /app
-COPY --from=builder /app .
+RUN addgroup -S avos && adduser -S -G avos avos
+COPY --from=builder --chown=avos:avos /app/build/install/avos-adservice/ /app/
+
+ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75.0"
+
+USER avos
 
 EXPOSE 9555
-ENTRYPOINT ["/app/build/install/hipstershop/bin/AdService"]
+ENTRYPOINT ["/app/bin/avos-adservice"]

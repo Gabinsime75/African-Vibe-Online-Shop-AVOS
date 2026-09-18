@@ -14,10 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# [START gke_adservice_genproto]
-# protos are needed in adservice folder for compiling during Docker build.
+# The shared AVOS contract is copied into the service before a local or container build.
 
-mkdir -p proto && \
+mkdir -p src/main/proto && \
 cp ../../protos/demo.proto src/main/proto
-
-# [END gke_adservice_genproto]

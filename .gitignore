@@ -94,3 +94,8 @@ Thumbs.db
 node_modules/
 dist/
 coverage/node_modules/
+
+# Java and Gradle
+.gradle/
+build/
+*.class

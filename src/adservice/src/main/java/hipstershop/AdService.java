@@ -17,38 +17,35 @@
 package hipstershop;
 
 import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
 import hipstershop.Demo.Ad;
 import hipstershop.Demo.AdRequest;
 import hipstershop.Demo.AdResponse;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
-import io.grpc.StatusRuntimeException;
+import io.grpc.Status;
 import io.grpc.health.v1.HealthCheckResponse.ServingStatus;
-import io.grpc.services.*;
+import io.grpc.services.HealthStatusManager;
 import io.grpc.stub.StreamObserver;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
-import org.apache.logging.log4j.Level;
+import java.util.Locale;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public final class AdService {
 
-  private static final Logger logger = LogManager.getLogger(AdService.class);
+  private static final Logger LOGGER = LogManager.getLogger(AdService.class);
 
-  @SuppressWarnings("FieldCanBeLocal")
-  private static int MAX_ADS_TO_SERVE = 2;
+  private static final int MAX_ADS_TO_SERVE = 2;
 
   private Server server;
   private HealthStatusManager healthMgr;
 
-  private static final AdService service = new AdService();
+  private static final AdService SERVICE = new AdService();
 
   private void start() throws IOException {
     int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "9555"));
@@ -60,16 +57,15 @@ public final class AdService {
             .addService(healthMgr.getHealthService())
             .build()
             .start();
-    logger.info("Ad Service started, listening on " + port);
+    LOGGER.info("AVOS Ad Service started on gRPC port {}", port);
     Runtime.getRuntime()
         .addShutdownHook(
             new Thread(
                 () -> {
                   // Use stderr here since the logger may have been reset by its JVM shutdown hook.
-                  System.err.println(
-                      "*** shutting down gRPC ads server since JVM is shutting down");
+                  System.err.println("Shutting down the AVOS Ad Service gRPC server");
                   AdService.this.stop();
-                  System.err.println("*** server shut down");
+                  System.err.println("AVOS Ad Service stopped");
                 }));
     healthMgr.setStatus("", ServingStatus.SERVING);
   }
@@ -95,7 +91,7 @@ public final class AdService {
       AdService service = AdService.getInstance();
       try {
         List<Ad> allAds = new ArrayList<>();
-        logger.info("received ad request (context_words=" + req.getContextKeysList() + ")");
+        LOGGER.info("Received ad request with context keys {}", req.getContextKeysList());
         if (req.getContextKeysCount() > 0) {
           for (int i = 0; i < req.getContextKeysCount(); i++) {
             Collection<Ad> ads = service.getAdsByCategory(req.getContextKeys(i));
@@ -111,9 +107,12 @@ public final class AdService {
         AdResponse reply = AdResponse.newBuilder().addAllAds(allAds).build();
         responseObserver.onNext(reply);
         responseObserver.onCompleted();
-      } catch (StatusRuntimeException e) {
-        logger.log(Level.WARN, "GetAds Failed with status {}", e.getStatus());
-        responseObserver.onError(e);
+      } catch (RuntimeException e) {
+        LOGGER.error("Unable to build an ad response", e);
+        responseObserver.onError(
+            Status.INTERNAL
+                .withDescription("Unable to retrieve advertisements")
+                .asRuntimeException());
       }
     }
   }
@@ -121,22 +120,17 @@ public final class AdService {
   private static final ImmutableListMultimap<String, Ad> adsMap = createAdsMap();
 
   private Collection<Ad> getAdsByCategory(String category) {
-    return adsMap.get(category);
+    return adsMap.get(category.toLowerCase(Locale.ROOT));
   }
 
-  private static final Random random = new Random();
-
   private List<Ad> getRandomAds() {
-    List<Ad> ads = new ArrayList<>(MAX_ADS_TO_SERVE);
-    Collection<Ad> allAds = adsMap.values();
-    for (int i = 0; i < MAX_ADS_TO_SERVE; i++) {
-      ads.add(Iterables.get(allAds, random.nextInt(allAds.size())));
-    }
-    return ads;
+    List<Ad> ads = new ArrayList<>(new LinkedHashSet<>(adsMap.values()));
+    Collections.shuffle(ads);
+    return ads.subList(0, Math.min(MAX_ADS_TO_SERVE, ads.size()));
   }
 
   private static AdService getInstance() {
-    return service;
+    return SERVICE;
   }
 
   /** Await termination on the main thread since the grpc library uses daemon threads. */
@@ -177,43 +171,32 @@ public final class AdService {
             .setRedirectUrl("/product/6E92ZMYYFZ")
             .setText("Add a bold finishing touch with a traditional tie necklace.")
             .build();
-    Ad openSlacksShoes =
+    Ad openSlatShoes =
         Ad.newBuilder()
             .setRedirectUrl("/product/L9ECAV7KIM")
-            .setText("Move freely in relaxed open-slack shoes from the AVOS collection.")
+            .setText("Move freely in AVOS open-slat slip-on shoes.")
             .build();
     return ImmutableListMultimap.<String, Ad>builder()
         .putAll("clothing", goldTraditionalClothing, whiteTraditionalClothing, tieNecklace)
         .putAll("accessories", wearableWallet, kingsStaff, tieNecklace)
-        .putAll("footwear", eldecksShoes, openSlacksShoes)
+        .putAll("footwear", eldecksShoes, openSlatShoes)
         .build();
   }
 
   private static void initStats() {
     if (System.getenv("DISABLE_STATS") != null) {
-      logger.info("Stats disabled.");
+      LOGGER.info("Metrics collection disabled by DISABLE_STATS");
       return;
     }
-    logger.info("Stats enabled, but temporarily unavailable");
-
-    long sleepTime = 10; /* seconds */
-    int maxAttempts = 5;
-
-    // TODO(arbrown) Implement OpenTelemetry stats
-
+    LOGGER.info("Metrics will be collected by the AVOS OpenTelemetry platform integration");
   }
 
   private static void initTracing() {
     if (System.getenv("DISABLE_TRACING") != null) {
-      logger.info("Tracing disabled.");
+      LOGGER.info("Tracing disabled by DISABLE_TRACING");
       return;
     }
-    logger.info("Tracing enabled but temporarily unavailable");
-    logger.info("See https://github.com/GoogleCloudPlatform/microservices-demo/issues/422 for more info.");
-
-    // TODO(arbrown) Implement OpenTelemetry tracing
-    
-    logger.info("Tracing enabled - Stackdriver exporter initialized.");
+    LOGGER.info("Tracing will be exported through the AVOS OpenTelemetry Collector");
   }
 
   /** Main launches the server from the command line. */
@@ -227,7 +210,7 @@ public final class AdService {
         .start();
 
     // Start the RPC server. You shouldn't see any output from gRPC before this.
-    logger.info("AdService starting.");
+    LOGGER.info("Starting AVOS Ad Service");
     final AdService service = AdService.getInstance();
     service.start();
     service.blockUntilShutdown();

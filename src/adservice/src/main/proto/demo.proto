@@ -16,6 +16,9 @@ syntax = "proto3";
 
 package hipstershop;
 
+// Compatibility note: AVOS retains this package name during Phase 1 so existing
+// clients in every implementation language continue to use the same gRPC API.
+
 // -----------------Cart service-----------------
 
 service CartService {

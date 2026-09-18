@@ -36,7 +36,7 @@ public class AdServiceClient {
   private final ManagedChannel channel;
   private final hipstershop.AdServiceGrpc.AdServiceBlockingStub blockingStub;
 
-  /** Construct client connecting to Ad Service at {@code host:port}. */
+  /** Constructs a client that connects to the AVOS Ad Service at {@code host:port}. */
   private AdServiceClient(String host, int port) {
     this(
         ManagedChannelBuilder.forAddress(host, port)
@@ -46,7 +46,7 @@ public class AdServiceClient {
             .build());
   }
 
-  /** Construct client for accessing RouteGuide server using the existing channel. */
+  /** Constructs a client using an existing gRPC channel. */
   private AdServiceClient(ManagedChannel channel) {
     this.channel = channel;
     blockingStub = hipstershop.AdServiceGrpc.newBlockingStub(channel);
@@ -100,7 +100,7 @@ public class AdServiceClient {
    */
   public static void main(String[] args) throws InterruptedException {
     // Add final keyword to pass checkStyle.
-    final String contextKeys = getStringOrDefaultFromArgs(args, 0, "camera");
+    final String contextKeys = getStringOrDefaultFromArgs(args, 0, "clothing");
     final String host = getStringOrDefaultFromArgs(args, 1, "localhost");
     final int serverPort = getPortOrDefaultFromArgs(args);
 
