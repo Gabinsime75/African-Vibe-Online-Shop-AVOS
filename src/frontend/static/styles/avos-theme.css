@@ -1,0 +1,180 @@
+/*
+ * African Vibe Online Shop (AVOS) visual identity.
+ * The palette draws from woven textiles, earth pigments, natural fibers,
+ * and contemporary African design without representing one culture as all Africa.
+ */
+
+:root {
+  --avos-ink: #1e1a17;
+  --avos-forest: #1f5d4a;
+  --avos-terracotta: #c45a3a;
+  --avos-gold: #e3a62f;
+  --avos-indigo: #343b73;
+  --avos-sand: #f2e2c4;
+  --avos-ivory: #fff9ef;
+  --avos-muted: #6b625b;
+  --avos-white: #ffffff;
+}
+
+body {
+  background: var(--avos-ivory);
+  color: var(--avos-ink);
+}
+
+header > .navbar:first-child {
+  background: var(--avos-forest);
+}
+
+header .navbar.sub-navbar {
+  background: var(--avos-ivory);
+  border-bottom: 3px solid var(--avos-gold);
+  color: var(--avos-muted);
+}
+
+header .avos-nav-logo {
+  width: auto;
+  height: 44px;
+}
+
+header .navbar.sub-navbar a,
+header .navbar.sub-navbar select {
+  color: var(--avos-ink);
+}
+
+header .cart-size-circle {
+  background-color: var(--avos-terracotta);
+  color: var(--avos-white);
+}
+
+main,
+.recommendations,
+.cart-sections,
+.order-complete-section {
+  background-color: var(--avos-ivory);
+}
+
+.home-mobile-hero-banner {
+  height: 240px;
+  background: var(--avos-forest) url(/static/images/AVOS_HeroPattern.svg) no-repeat center;
+  background-size: cover;
+}
+
+.home-desktop-left-image {
+  background: var(--avos-forest) url(/static/images/AVOS_HeroPattern.svg) no-repeat center;
+  background-size: cover;
+}
+
+.hot-products-row h3 {
+  color: var(--avos-forest);
+  font-weight: 700;
+}
+
+.hot-product-card img {
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border: 2px solid var(--avos-sand);
+  border-radius: 22px 22px 6px 22px;
+}
+
+.hot-product-card-name {
+  color: var(--avos-ink);
+  font-weight: 700;
+}
+
+.hot-product-card-price,
+.h-product .product-price {
+  color: var(--avos-terracotta);
+}
+
+.avos-button-primary,
+.avos-button-secondary {
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+.avos-button-primary {
+  background: var(--avos-terracotta);
+  border-color: var(--avos-terracotta);
+  color: var(--avos-white);
+}
+
+.avos-button-primary:hover,
+.avos-button-primary:focus,
+.avos-button-primary:active {
+  background: var(--avos-forest);
+  border-color: var(--avos-forest);
+  color: var(--avos-white);
+}
+
+.avos-button-secondary {
+  background: transparent;
+  border-color: var(--avos-forest);
+  color: var(--avos-forest);
+}
+
+.avos-button-secondary:hover,
+.avos-button-secondary:focus,
+.avos-button-secondary:active {
+  background: var(--avos-sand);
+  color: var(--avos-ink);
+}
+
+.avos-form-field input,
+.avos-form-field select {
+  border-color: var(--avos-sand);
+}
+
+.avos-form-field input:focus,
+.avos-form-field select:focus {
+  border-color: var(--avos-gold);
+  box-shadow: 0 0 0 3px rgba(227, 166, 47, .22);
+}
+
+.avos-ad-card {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 18px 22px;
+  background: linear-gradient(110deg, var(--avos-forest), var(--avos-indigo));
+  border-left: 6px solid var(--avos-gold);
+  border-radius: 12px;
+  color: var(--avos-white);
+  box-shadow: 0 12px 32px rgba(30, 26, 23, .16);
+}
+
+.avos-ad-card strong {
+  color: var(--avos-gold);
+  white-space: nowrap;
+}
+
+.avos-ad-card a {
+  color: var(--avos-white);
+  text-decoration: none;
+}
+
+.avos-ad-card a:hover,
+.avos-ad-card a:focus {
+  color: var(--avos-sand);
+  text-decoration: underline;
+}
+
+footer .footer-top {
+  background: var(--avos-ink);
+  border-top: 5px solid var(--avos-gold);
+}
+
+footer .footer-top a {
+  color: var(--avos-sand);
+}
+
+@media (max-width: 575.98px) {
+  header .avos-nav-logo {
+    max-width: 210px;
+    height: auto;
+  }
+
+  .avos-ad-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

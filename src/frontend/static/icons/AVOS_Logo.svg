@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 84" role="img" aria-labelledby="title description">
+  <title id="title">African Vibe Online Shop</title>
+  <desc id="description">AVOS woven diamond mark and wordmark</desc>
+  <defs>
+    <linearGradient id="avos-mark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#E3A62F"/>
+      <stop offset="1" stop-color="#C45A3A"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(4 4)">
+    <rect width="76" height="76" rx="22" fill="#1F5D4A"/>
+    <path d="M38 8 68 38 38 68 8 38Z" fill="none" stroke="#FFF9EF" stroke-width="3"/>
+    <path d="M38 18 58 38 38 58 18 38Z" fill="url(#avos-mark)"/>
+    <path d="m38 23 13 27h-7l-2.5-6h-8L31 50h-7l14-27Zm0 10-2.5 6h5L38 33Z" fill="#FFF9EF"/>
+    <circle cx="14" cy="14" r="3" fill="#E3A62F"/>
+    <circle cx="62" cy="62" r="3" fill="#E3A62F"/>
+  </g>
+  <g fill="#1E1A17" font-family="DM Sans, Segoe UI, Arial, sans-serif">
+    <text x="98" y="40" font-size="30" font-weight="700" letter-spacing="1">AFRICAN VIBE</text>
+    <text x="100" y="63" font-size="15" font-weight="700" letter-spacing="4" fill="#1F5D4A">ONLINE SHOP · AVOS</text>
+  </g>
+</svg>

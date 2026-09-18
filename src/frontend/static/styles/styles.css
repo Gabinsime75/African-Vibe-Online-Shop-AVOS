@@ -306,12 +306,12 @@ main {
 
 .home-mobile-hero-banner {
   height: 200px;
-  background: url(/static/images/folded-clothes-on-white-chair-wide.jpg) no-repeat top center;
+  background-color: #1f5d4a;
   background-size: cover;
 }
 
 .home-desktop-left-image {
-  background: url(/static/images/folded-clothes-on-white-chair.jpg) no-repeat center;
+  background-color: #1f5d4a;
   background-size: cover;
 }
 
@@ -437,19 +437,6 @@ similar to that of the hot-products-row.
   color: #111111;
 }
 
-.h-product .product-packaging {
-  margin: 0 0 15px 0;
-}
-
-.h-product .product-packaging h3 {
-  font-size: 20px;
-}
-
-.h-product .product-packaging span {
-  display: inline-block;
-  margin: 0 10px 0 0;
-}
-
 .h-product .input-group-text,
 .h-product .btn.btn-info {
   font-size: 18px;
@@ -481,18 +468,14 @@ similar to that of the hot-products-row.
   height: 5px;
 }
 
-.h-product .cymbal-button-primary {
+.h-product .avos-button-primary {
   margin-top: 16px;
 }
 
 /* Platform Banner */
 
 .local,
-.aws-platform,
-.onprem-platform,
-.azure-platform,
-.alibaba-platform,
-.gcp-platform {
+.aws-platform {
   position: fixed;
   top: 0;
   left: 0;
@@ -506,27 +489,6 @@ similar to that of the hot-products-row.
 .aws-platform,
 .aws-platform .platform-flag {
   background-color: #ff9900;
-}
-
-.onprem-platform,
-.onprem-platform .platform-flag {
-  background-color: #34A853;
-}
-
-.gcp-platform,
-.gcp-platform .platform-flag {
-  background-color: #4285f4;
-}
-
-
-.azure-platform,
-.azure-platform .platform-flag {
-  background-color: #f35426;
-}
-
-.alibaba-platform,
-.alibaba-platform .platform-flag {
-  background-color: #ffC300;
 }
 
 .local,
@@ -586,14 +548,14 @@ select {
   -webkit-border-radius: 0px;
 }
 
-/* Cymbal */
+/* AVOS components */
 
 /*
-If we ever decide to create a separate Cymbal CSS library for Cymbal components,
+If we ever decide to create a separate AVOS CSS library for AVOS components,
 the rules below could be extracted.
 */
 
-.cymbal-button-primary, .cymbal-button-secondary {
+.avos-button-primary, .avos-button-secondary {
   display: inline-block;
   border: solid 1px #CE0631;
   padding: 8px 16px;
@@ -603,49 +565,49 @@ the rules below could be extracted.
   cursor: pointer;
 }
 
-.cymbal-button-primary:focus, .cymbal-button-secondary:focus {
+.avos-button-primary:focus, .avos-button-secondary:focus {
   outline: none; /* To override browser (Chrome) default blue outline. */
 }
 
-.cymbal-button-primary {
+.avos-button-primary {
   background-color: #CE0631;
   color: white;
 }
 
-.cymbal-button-primary:active,
-.cymbal-button-primary:focus,
-.cymbal-button-primary:hover {
+.avos-button-primary:active,
+.avos-button-primary:focus,
+.avos-button-primary:hover {
   border: solid 1px #7b031d;
   background-color: #7b031d;
   box-shadow: 0px 2px 2px 0px rgb(0 0 0 / 30%);
 }
 
-.cymbal-button-primary:active {
+.avos-button-primary:active {
   box-shadow: 0px 3px 6px 0px rgb(0 0 0 / 30%);
 }
 
-.cymbal-button-secondary {
+.avos-button-secondary {
   background: none;
   color: #CE0631;
 }
 
-.cymbal-button-secondary:active,
-.cymbal-button-secondary:focus,
-.cymbal-button-secondary:hover {
+.avos-button-secondary:active,
+.avos-button-secondary:focus,
+.avos-button-secondary:hover {
   color: #7b031d;
   border: solid 1px #7b031d;
 }
 
-.cymbal-button-secondary:active {
+.avos-button-secondary:active {
   background-color: #f5ccd5;
 }
 
-.cymbal-form-field {
+.avos-form-field {
   position: relative;
   margin-top: 24px;
 }
 
-.cymbal-form-field label {
+.avos-form-field label {
   width: 100%;
   margin: 0;
   padding: 8px 16px 0 16px;
@@ -657,10 +619,10 @@ the rules below could be extracted.
   background-color: white;
 }
 
-.cymbal-form-field input[type='email'],
-.cymbal-form-field input[type='password'],
-.cymbal-form-field select,
-.cymbal-form-field input[type='text'] {
+.avos-form-field input[type='email'],
+.avos-form-field input[type='password'],
+.avos-form-field select,
+.avos-form-field input[type='text'] {
   width: 100%;
   border: none;
   border-bottom: 1px solid #9AA0A6;
@@ -669,7 +631,7 @@ the rules below could be extracted.
   color: #1E2021;
 }
 
-.cymbal-form-field .cymbal-dropdown-chevron {
+.avos-form-field .avos-dropdown-chevron {
   position: absolute;
   right: 25px;
   width: 10px;

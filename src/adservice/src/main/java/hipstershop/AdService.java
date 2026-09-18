@@ -147,48 +147,45 @@ public final class AdService {
   }
 
   private static ImmutableListMultimap<String, Ad> createAdsMap() {
-    Ad hairdryer =
+    Ad wearableWallet =
         Ad.newBuilder()
             .setRedirectUrl("/product/2ZYFJ3GM2N")
-            .setText("Hairdryer for sale. 50% off.")
+            .setText("Carry culture with confidence—discover the AVOS wearable leather wallet.")
             .build();
-    Ad tankTop =
+    Ad eldecksShoes =
         Ad.newBuilder()
             .setRedirectUrl("/product/66VCHSJNUP")
-            .setText("Tank top for sale. 20% off.")
+            .setText("Step into contemporary African style with Eldeck shoes.")
             .build();
-    Ad candleHolder =
+    Ad goldTraditionalClothing =
         Ad.newBuilder()
             .setRedirectUrl("/product/0PUK6V6EV0")
-            .setText("Candle holder for sale. 30% off.")
+            .setText("Make an entrance in the AVOS gold traditional clothing collection.")
             .build();
-    Ad bambooGlassJar =
+    Ad whiteTraditionalClothing =
         Ad.newBuilder()
             .setRedirectUrl("/product/9SIQT8TOJO")
-            .setText("Bamboo glass jar for sale. 10% off.")
+            .setText("Celebrate timeless elegance with crisp white traditional attire.")
             .build();
-    Ad watch =
+    Ad kingsStaff =
         Ad.newBuilder()
             .setRedirectUrl("/product/1YMWWN1N4O")
-            .setText("Watch for sale. Buy one, get second kit for free")
+            .setText("Complete a distinguished look with the AVOS King's Staff.")
             .build();
-    Ad mug =
+    Ad tieNecklace =
         Ad.newBuilder()
             .setRedirectUrl("/product/6E92ZMYYFZ")
-            .setText("Mug for sale. Buy two, get third one for free")
+            .setText("Add a bold finishing touch with a traditional tie necklace.")
             .build();
-    Ad loafers =
+    Ad openSlacksShoes =
         Ad.newBuilder()
             .setRedirectUrl("/product/L9ECAV7KIM")
-            .setText("Loafers for sale. Buy one, get second one for free")
+            .setText("Move freely in relaxed open-slack shoes from the AVOS collection.")
             .build();
     return ImmutableListMultimap.<String, Ad>builder()
-        .putAll("clothing", tankTop)
-        .putAll("accessories", watch)
-        .putAll("footwear", loafers)
-        .putAll("hair", hairdryer)
-        .putAll("decor", candleHolder)
-        .putAll("kitchen", bambooGlassJar, mug)
+        .putAll("clothing", goldTraditionalClothing, whiteTraditionalClothing, tieNecklace)
+        .putAll("accessories", wearableWallet, kingsStaff, tieNecklace)
+        .putAll("footwear", eldecksShoes, openSlacksShoes)
         .build();
   }
 

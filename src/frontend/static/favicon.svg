@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">AVOS</title>
+  <rect width="64" height="64" rx="17" fill="#1F5D4A"/>
+  <path d="M32 6 58 32 32 58 6 32Z" fill="none" stroke="#FFF9EF" stroke-width="3"/>
+  <path d="M32 15 49 32 32 49 15 32Z" fill="#C45A3A"/>
+  <path d="m32 20 12 25h-7l-2-5h-7l-2 5h-7l13-25Zm0 10-2 5h4l-2-5Z" fill="#FFF9EF"/>
+  <circle cx="12" cy="12" r="3" fill="#E3A62F"/>
+  <circle cx="52" cy="52" r="3" fill="#E3A62F"/>
+</svg>

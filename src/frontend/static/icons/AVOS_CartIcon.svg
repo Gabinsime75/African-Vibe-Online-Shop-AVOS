@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-labelledby="title">
+  <title id="title">Shopping cart</title>
+  <path d="M3 5h4l3 15h14l3-10H9" fill="none" stroke="#1F5D4A" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4"/>
+  <circle cx="12" cy="26" r="2.3" fill="#C45A3A"/>
+  <circle cx="23" cy="26" r="2.3" fill="#C45A3A"/>
+  <path d="M13 14h9" stroke="#E3A62F" stroke-linecap="round" stroke-width="2.4"/>
+</svg>

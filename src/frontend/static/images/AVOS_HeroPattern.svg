@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 560" role="img" aria-labelledby="title description">
+  <title id="title">AVOS African-inspired geometric pattern</title>
+  <desc id="description">A modern woven pattern using forest green, terracotta, gold, indigo, sand, and ivory.</desc>
+  <defs>
+    <pattern id="weave" width="160" height="160" patternUnits="userSpaceOnUse">
+      <rect width="160" height="160" fill="#1F5D4A"/>
+      <path d="M80 8 152 80 80 152 8 80Z" fill="none" stroke="#E3A62F" stroke-width="8"/>
+      <path d="M80 36 124 80 80 124 36 80Z" fill="#C45A3A"/>
+      <path d="M80 55 105 80 80 105 55 80Z" fill="#343B73"/>
+      <circle cx="8" cy="8" r="7" fill="#F2E2C4"/>
+      <circle cx="152" cy="152" r="7" fill="#F2E2C4"/>
+    </pattern>
+    <linearGradient id="shade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#1E1A17" stop-opacity=".18"/>
+      <stop offset=".55" stop-color="#1E1A17" stop-opacity=".7"/>
+      <stop offset="1" stop-color="#1E1A17" stop-opacity=".92"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="560" fill="url(#weave)"/>
+  <rect width="1600" height="560" fill="url(#shade)"/>
+  <g fill="#FFF9EF" font-family="DM Sans, Segoe UI, Arial, sans-serif" text-anchor="end">
+    <text x="1500" y="240" font-size="72" font-weight="700">African style.</text>
+    <text x="1500" y="320" font-size="72" font-weight="700">Global confidence.</text>
+    <text x="1500" y="375" font-size="25" font-weight="700" letter-spacing="7" fill="#E3A62F">DISCOVER THE AVOS COLLECTION</text>
+  </g>
+</svg>

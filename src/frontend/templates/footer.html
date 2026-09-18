@@ -21,9 +21,9 @@
         <div class="container footer-social">
             <p class="footer-text">This website is hosted for demo purposes only. It is not an actual shop.</p>
             <p>
-                © 2026 CloudHustler
+                © 2026 African Vibe Online Shop (AVOS)
                 (<a
-                    href="https://github.com/Gabinsime75/CloudHustler-Commerce-Platform"
+                    href="https://github.com/Gabinsime75/African-Vibe-Online-Shop-AVOS"
                     target="_blank"
                     rel="noopener noreferrer"
                 >Source Code</a>)
@@ -39,8 +39,8 @@
                         {{ if index .deploymentDetails "CLUSTERNAME" }}
                         <b>Cluster: </b>{{ index .deploymentDetails "CLUSTERNAME" }}<br/>
                         {{ end }}
-                        {{ if index .deploymentDetails "ZONE" }}
-                        <b>Zone: </b>{{ index .deploymentDetails "ZONE" }}<br/>
+                        {{ if index .deploymentDetails "REGION" }}
+                        <b>Region: </b>{{ index .deploymentDetails "REGION" }}<br/>
                         {{ end }}
                         {{ if index .deploymentDetails "HOSTNAME" }}
                         <b>Pod: </b>{{ index .deploymentDetails "HOSTNAME" }}
