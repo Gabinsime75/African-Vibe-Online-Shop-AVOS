@@ -19,7 +19,7 @@ import (
 	"strings"
 	"time"
 
-	pb "github.com/GoogleCloudPlatform/microservices-demo/src/productcatalogservice/genproto"
+	pb "github.com/Gabinsime75/African-Vibe-Online-Shop-AVOS/src/productcatalogservice/genproto"
 	"google.golang.org/grpc/codes"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
@@ -47,10 +47,12 @@ func (p *productCatalog) ListProducts(context.Context, *pb.Empty) (*pb.ListProdu
 func (p *productCatalog) GetProduct(ctx context.Context, req *pb.GetProductRequest) (*pb.Product, error) {
 	time.Sleep(extraLatency)
 
+	products := p.parseCatalog()
 	var found *pb.Product
-	for i := 0; i < len(p.parseCatalog()); i++ {
-		if req.Id == p.parseCatalog()[i].Id {
-			found = p.parseCatalog()[i]
+	for _, product := range products {
+		if req.Id == product.Id {
+			found = product
+			break
 		}
 	}
 
@@ -75,7 +77,7 @@ func (p *productCatalog) SearchProducts(ctx context.Context, req *pb.SearchProdu
 }
 
 func (p *productCatalog) parseCatalog() []*pb.Product {
-	if reloadCatalog || len(p.catalog.Products) == 0 {
+	if len(p.catalog.Products) == 0 {
 		err := loadCatalog(&p.catalog)
 		if err != nil {
 			return []*pb.Product{}

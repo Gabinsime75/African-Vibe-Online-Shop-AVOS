@@ -2,8 +2,8 @@
     "products": [
         {
             "id": "OLJCESPC7Z",
-            "name": "Sunglasses",
-            "description": "Add a modern touch to your outfits with these sleek aviator sunglasses.",
+            "name": "AVOS Aviator Sunglasses",
+            "description": "Complete your look with lightweight aviator sunglasses selected for the AVOS accessories collection.",
             "picture": "/static/img/products/sunglasses.avif",
             "priceUsd": {
                 "currencyCode": "USD",
@@ -14,8 +14,8 @@
         },
         {
             "id": "66VCHSJNUP",
-            "name": "Eldeck Shoes",
-            "description": "Stylish shoes from ELDECK.",
+            "name": "Eldeck Statement Shoes",
+            "description": "Step out confidently in contemporary Eldeck shoes with a bold, versatile silhouette.",
             "picture": "/static/img/products/eldeck-shoes.avif",
             "priceUsd": {
                 "currencyCode": "USD",
@@ -26,8 +26,8 @@
         },
         {
             "id": "1YMWWN1N4O",
-            "name": "King's Staff",
-            "description": "This gold-tone stainless steel King's Staff will work with most of your outfits.",
+            "name": "King's Ceremonial Staff",
+            "description": "A distinguished gold-tone ceremonial staff designed to complete formal and traditional looks.",
             "picture": "/static/img/products/kings-staff.avif",
             "priceUsd": {
                 "currencyCode": "USD",
@@ -38,8 +38,8 @@
         },
         {
             "id": "L9ECAV7KIM",
-            "name": "Shoes-open slacks crocs",
-            "description": "A neat addition to your summer wardrobe.",
+            "name": "Open-Slat Slip-On Shoes",
+            "description": "Comfortable open-slat slip-on shoes for relaxed, warm-weather styling.",
             "picture": "/static/img/products/shoes-open-slacks-crocs.avif",
             "priceUsd": {
                 "currencyCode": "USD",
@@ -50,8 +50,8 @@
         },
         {
             "id": "2ZYFJ3GM2N",
-            "name": "Weareable double warlet leather",
-            "description": "This lightweight Weareable double warlet leather has 3 heat and speed settings. It's perfect for travel.",
+            "name": "Wearable Double Leather Wallet",
+            "description": "A hands-free double leather wallet that keeps everyday essentials organized while traveling.",
             "picture": "/static/img/products/wearable-double-wallet-leather.avif",
             "priceUsd": {
                 "currencyCode": "USD",
@@ -62,8 +62,8 @@
         },
         {
             "id": "0PUK6V6EV0",
-            "name": "Men'S Ethnic Traditional Clothing Gold",
-            "description": "This small but intricate Men'S Ethnic Traditional Clothing Gold is an excellent gift.",
+            "name": "Men's Gold Traditional Ensemble",
+            "description": "A richly detailed gold traditional ensemble created for celebrations and formal occasions.",
             "picture": "/static/img/products/mens-ethnic-traditional-clothing-gold.avif",
             "priceUsd": {
                 "currencyCode": "USD",
@@ -74,8 +74,8 @@
         },
         {
             "id": "LS4PSXUNUM",
-            "name": "Men'S Ethnic Traditional Clothing",
-            "description": "Beautiful traditional clothing for men.",
+            "name": "Men's Traditional Ensemble",
+            "description": "A refined men's traditional ensemble that brings heritage-inspired design to modern occasions.",
             "picture": "/static/img/products/mens-ethnic-traditional-clothing.avif",
             "priceUsd": {
                 "currencyCode": "USD",
@@ -86,8 +86,8 @@
         },
         {
             "id": "9SIQT8TOJO",
-            "name": "Men'S Ethnic Traditional Clothing White",
-            "description": "This Men'S Ethnic Traditional Clothing White is a beautiful addition to any wardrobe.",
+            "name": "Men's White Traditional Ensemble",
+            "description": "An elegant white traditional ensemble with a clean finish for ceremonies and special events.",
             "picture": "/static/img/products/mens-ethnic-traditional-clothing-white.avif",
             "priceUsd": {
                 "currencyCode": "USD",
@@ -99,14 +99,14 @@
         {
             "id": "6E92ZMYYFZ",
             "name": "Traditional Tie Necklace",
-            "description": "A simple Traditional Tie Necklace with a mustard interior.",
+            "description": "A distinctive tie necklace that adds color, texture, and cultural character to formal styling.",
             "picture": "/static/img/products/traditional-tie-necklace.avif",
             "priceUsd": {
                 "currencyCode": "USD",
                 "units": 8,
                 "nanos": 990000000
             },
-            "categories": ["clothing"]
+            "categories": ["accessories"]
         }
     ]
 }

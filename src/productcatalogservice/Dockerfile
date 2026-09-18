@@ -35,6 +35,9 @@ ARG SKAFFOLD_GO_GCFLAGS
 RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} CGO_ENABLED=0 go build -ldflags="-s -w" -gcflags="${SKAFFOLD_GO_GCFLAGS}" -o /productcatalogservice .
 
 FROM gcr.io/distroless/static
+LABEL org.opencontainers.image.title="AVOS Product Catalog Service" \
+      org.opencontainers.image.description="Product catalog gRPC service for African Vibe Online Shop" \
+      org.opencontainers.image.source="https://github.com/Gabinsime75/African-Vibe-Online-Shop-AVOS"
 
 WORKDIR /src
 COPY --from=builder /productcatalogservice ./server

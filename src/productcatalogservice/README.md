@@ -1,38 +1,64 @@
-# productcatalogservice
+# AVOS Product Catalog Service
 
-Run the following command to restore dependencies to `vendor/` directory:
+The product catalog service owns the AVOS product collection and exposes product listing, lookup, and search operations through gRPC.
 
-    go mod vendor
+## Responsibilities
 
-## Dynamic catalog reloading / artificial delay
+| Capability | Role |
+|---|---|
+| Product listing | Returns the complete AVOS product collection. |
+| Product lookup | Retrieves one product by its stable product ID. |
+| Product search | Searches product names and descriptions. |
+| Local catalog | Loads `products.json` for development and initial deployment. |
+| Aurora integration | Loads products from Aurora PostgreSQL when `DATABASE_URL` is configured. |
+| OpenTelemetry | Exports distributed traces to the configured collector. |
 
-This service has a "dynamic catalog reloading" feature that is purposefully
-not well implemented. The goal of this feature is to allow you to modify the
-`products.json` file and have the changes be picked up without having to
-restart the service.
+The catalog is loaded during service startup. GitOps rolls the deployment when catalog configuration changes, avoiding platform-specific process signals and per-request file reloads.
 
-However, this feature is bugged: the catalog is actually reloaded on each
-request, introducing a noticeable delay in the frontend. This delay will also
-show up in profiling tools: the `parseCatalog` function will take more than 80%
-of the CPU time.
+## Catalog source
 
-You can trigger this feature (and the delay) by sending a `USR1` signal and
-remove it (if needed) by sending a `USR2` signal:
+The service uses `products.json` by default. In EKS, configure Aurora using a connection string injected by External Secrets:
 
-```
-# Trigger bug
-kubectl exec \
-    $(kubectl get pods -l app=productcatalogservice -o jsonpath='{.items[0].metadata.name}') \
-    -c server -- kill -USR1 1
-# Remove bug
-kubectl exec \
-    $(kubectl get pods -l app=productcatalogservice -o jsonpath='{.items[0].metadata.name}') \
-    -c server -- kill -USR2 1
+```text
+DATABASE_URL=postgres://avos_user:password@avos-cluster.example:5432/avos?sslmode=require
+PRODUCTS_TABLE=products
 ```
 
-## Latency injection
+`DATABASE_URL` must come from an external Kubernetes Secret and must never be committed to Git.
 
-This service has an `EXTRA_LATENCY` environment variable. This will inject a sleep for the specified [time.Duration](https://golang.org/pkg/time/#ParseDuration) on every call to
-to the server.
+The Aurora table must expose these columns:
 
-For example, use `EXTRA_LATENCY="5.5s"` to sleep for 5.5 seconds on every request.
+```sql
+CREATE TABLE products (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT NOT NULL,
+  picture TEXT NOT NULL,
+  price_usd_currency_code TEXT NOT NULL,
+  price_usd_units BIGINT NOT NULL,
+  price_usd_nanos INTEGER NOT NULL,
+  categories TEXT NOT NULL
+);
+```
+
+Store categories as a comma-separated value such as `clothing,menswear`.
+
+## Optional settings
+
+```text
+PORT=3550
+ENABLE_TRACING=1
+COLLECTOR_SERVICE_ADDR=otel-collector:4317
+EXTRA_LATENCY=250ms
+```
+
+`EXTRA_LATENCY` is intended only for resilience and observability testing.
+
+## Validate locally
+
+```bash
+go mod tidy
+go test ./...
+go build ./...
+docker build -t avos/productcatalogservice:phase-1 .
+```

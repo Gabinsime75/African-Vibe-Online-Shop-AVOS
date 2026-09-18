@@ -15,27 +15,25 @@
 package main
 
 import (
-	"bytes"
 	"context"
-	"fmt"
-	"net"
 	"os"
 	"strings"
+	"time"
 
-	"cloud.google.com/go/alloydbconn"
-	secretmanager "cloud.google.com/go/secretmanager/apiv1"
-	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
-	pb "github.com/GoogleCloudPlatform/microservices-demo/src/productcatalogservice/genproto"
-	"github.com/golang/protobuf/jsonpb"
+	pb "github.com/Gabinsime75/African-Vibe-Online-Shop-AVOS/src/productcatalogservice/genproto"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"google.golang.org/protobuf/encoding/protojson"
 )
+
+const defaultProductsTable = "products"
 
 func loadCatalog(catalog *pb.ListProductsResponse) error {
 	catalogMutex.Lock()
 	defer catalogMutex.Unlock()
 
-	if os.Getenv("ALLOYDB_CLUSTER_NAME") != "" {
-		return loadCatalogFromAlloyDB(catalog)
+	if strings.TrimSpace(os.Getenv("DATABASE_URL")) != "" {
+		return loadCatalogFromAurora(catalog)
 	}
 
 	return loadCatalogFromLocalFile(catalog)
@@ -50,7 +48,7 @@ func loadCatalogFromLocalFile(catalog *pb.ListProductsResponse) error {
 		return err
 	}
 
-	if err := jsonpb.Unmarshal(bytes.NewReader(catalogJSON), catalog); err != nil {
+	if err := protojson.Unmarshal(catalogJSON, catalog); err != nil {
 		log.Warnf("failed to parse the catalog JSON: %v", err)
 		return err
 	}
@@ -59,80 +57,34 @@ func loadCatalogFromLocalFile(catalog *pb.ListProductsResponse) error {
 	return nil
 }
 
-func getSecretPayload(project, secret, version string) (string, error) {
-	ctx := context.Background()
-	client, err := secretmanager.NewClient(ctx)
+func loadCatalogFromAurora(catalog *pb.ListProductsResponse) error {
+	log.Info("loading AVOS catalog from Aurora PostgreSQL...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	pool, err := pgxpool.New(ctx, os.Getenv("DATABASE_URL"))
 	if err != nil {
-		log.Warnf("failed to create SecretManager client: %v", err)
-		return "", err
-	}
-	defer client.Close()
-
-	req := &secretmanagerpb.AccessSecretVersionRequest{
-		Name: fmt.Sprintf("projects/%s/secrets/%s/versions/%s", project, secret, version),
-	}
-
-	// Call the API.
-	result, err := client.AccessSecretVersion(ctx, req)
-	if err != nil {
-		log.Warnf("failed to access SecretVersion: %v", err)
-		return "", err
-	}
-
-	return string(result.Payload.Data), nil
-}
-
-func loadCatalogFromAlloyDB(catalog *pb.ListProductsResponse) error {
-	log.Info("loading catalog from AlloyDB...")
-
-	projectID := os.Getenv("PROJECT_ID")
-	region := os.Getenv("REGION")
-	pgClusterName := os.Getenv("ALLOYDB_CLUSTER_NAME")
-	pgInstanceName := os.Getenv("ALLOYDB_INSTANCE_NAME")
-	pgDatabaseName := os.Getenv("ALLOYDB_DATABASE_NAME")
-	pgTableName := os.Getenv("ALLOYDB_TABLE_NAME")
-	pgSecretName := os.Getenv("ALLOYDB_SECRET_NAME")
-
-	pgPassword, err := getSecretPayload(projectID, pgSecretName, "latest")
-	if err != nil {
-		return err
-	}
-
-	dialer, err := alloydbconn.NewDialer(context.Background())
-	if err != nil {
-		log.Warnf("failed to set-up dialer connection: %v", err)
-		return err
-	}
-	cleanup := func() error { return dialer.Close() }
-	defer cleanup()
-
-	dsn := fmt.Sprintf(
-		"user=%s password=%s dbname=%s sslmode=disable",
-		"postgres", pgPassword, pgDatabaseName,
-	)
-
-	config, err := pgxpool.ParseConfig(dsn)
-	if err != nil {
-		log.Warnf("failed to parse DSN config: %v", err)
-		return err
-	}
-
-	pgInstanceURI := fmt.Sprintf("projects/%s/locations/%s/clusters/%s/instances/%s", projectID, region, pgClusterName, pgInstanceName)
-	config.ConnConfig.DialFunc = func(ctx context.Context, _ string, _ string) (net.Conn, error) {
-		return dialer.Dial(ctx, pgInstanceURI)
-	}
-
-	pool, err := pgxpool.NewWithConfig(context.Background(), config)
-	if err != nil {
-		log.Warnf("failed to set-up pgx pool: %v", err)
+		log.Warnf("failed to create Aurora connection pool: %v", err)
 		return err
 	}
 	defer pool.Close()
 
-	query := "SELECT id, name, description, picture, price_usd_currency_code, price_usd_units, price_usd_nanos, categories FROM " + pgTableName
-	rows, err := pool.Query(context.Background(), query)
+	if err := pool.Ping(ctx); err != nil {
+		log.Warnf("failed to connect to Aurora PostgreSQL: %v", err)
+		return err
+	}
+
+	tableName := strings.TrimSpace(os.Getenv("PRODUCTS_TABLE"))
+	if tableName == "" {
+		tableName = defaultProductsTable
+	}
+
+	query := "SELECT id, name, description, picture, price_usd_currency_code, " +
+		"price_usd_units, price_usd_nanos, categories FROM " + pgx.Identifier{tableName}.Sanitize()
+	rows, err := pool.Query(ctx, query)
 	if err != nil {
-		log.Warnf("failed to query database: %v", err)
+		log.Warnf("failed to query Aurora product catalog: %v", err)
 		return err
 	}
 	defer rows.Close()
@@ -150,12 +102,20 @@ func loadCatalogFromAlloyDB(catalog *pb.ListProductsResponse) error {
 			log.Warnf("failed to scan query result row: %v", err)
 			return err
 		}
-		categories = strings.ToLower(categories)
-		product.Categories = strings.Split(categories, ",")
+		for _, category := range strings.Split(strings.ToLower(categories), ",") {
+			if category = strings.TrimSpace(category); category != "" {
+				product.Categories = append(product.Categories, category)
+			}
+		}
 
 		catalog.Products = append(catalog.Products, product)
 	}
 
-	log.Info("successfully parsed product catalog from AlloyDB")
+	if err := rows.Err(); err != nil {
+		log.Warnf("failed while reading Aurora product rows: %v", err)
+		return err
+	}
+
+	log.Infof("successfully loaded %d AVOS products from Aurora PostgreSQL", len(catalog.Products))
 	return nil
 }
