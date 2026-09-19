@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 #
 # Copyright 2018 Google LLC
 #
@@ -14,26 +14,44 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
+import argparse
+
 import grpc
+
 import demo_pb2
 import demo_pb2_grpc
+from logger import get_json_logger
 
-from logger import getJSONLogger
-logger = getJSONLogger('recommendationservice-server')
+
+LOGGER = get_json_logger("avos-recommendationservice-client")
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Call the AVOS Recommendation Service"
+    )
+    parser.add_argument("--address", default="localhost:8080")
+    parser.add_argument("--user-id", default="local-test-user")
+    parser.add_argument("--product-id", action="append", default=[])
+    parser.add_argument("--timeout", type=float, default=5.0)
+    args = parser.parse_args()
+
+    with grpc.insecure_channel(args.address) as channel:
+        grpc.channel_ready_future(channel).result(timeout=args.timeout)
+        stub = demo_pb2_grpc.RecommendationServiceStub(channel)
+        response = stub.ListRecommendations(
+            demo_pb2.ListRecommendationsRequest(
+                user_id=args.user_id,
+                product_ids=args.product_id,
+            ),
+            timeout=args.timeout,
+        )
+
+    LOGGER.info(
+        "Received recommendations",
+        extra={"product_ids": list(response.product_ids)},
+    )
+
 
 if __name__ == "__main__":
-    # get port
-    if len(sys.argv) > 1:
-        port = sys.argv[1]
-    else:
-        port = "8080"
-
-    # set up server stub
-    channel = grpc.insecure_channel('localhost:'+port)
-    stub = demo_pb2_grpc.RecommendationServiceStub(channel)
-    # form request
-    request = demo_pb2.ListRecommendationsRequest(user_id="test", product_ids=["test"])
-    # make call to server
-    response = stub.ListRecommendations(request)
-    logger.info(response)
+    main()

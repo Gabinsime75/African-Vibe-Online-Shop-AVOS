@@ -14,13 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# [START gke_recommendationservice_genproto]
-
-# script to compile python protos
-#
-# requires gRPC tools:
-#   pip install -r requirements.txt
+# Regenerates the Python gRPC bindings from the shared AVOS contract.
+# Requires: python -m pip install grpcio-tools==1.76.0
 
 python -m grpc_tools.protoc -I../../protos --python_out=. --grpc_python_out=. ../../protos/demo.proto
-
-# [END gke_recommendationservice_genproto]

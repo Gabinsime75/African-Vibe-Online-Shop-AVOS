@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 #
 # Copyright 2018 Google LLC
 #
@@ -14,28 +14,41 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import logging
 import sys
-from pythonjsonlogger import jsonlogger
+from datetime import datetime
+from datetime import timezone
 
-# TODO(yoshifumi) this class is duplicated since other Python services are
-# not sharing the modules for logging.
-class CustomJsonFormatter(jsonlogger.JsonFormatter):
-  def add_fields(self, log_record, record, message_dict):
-    super(CustomJsonFormatter, self).add_fields(log_record, record, message_dict)
-    if not log_record.get('timestamp'):
-      log_record['timestamp'] = record.created
-    if log_record.get('severity'):
-      log_record['severity'] = log_record['severity'].upper()
-    else:
-      log_record['severity'] = record.levelname
 
-def getJSONLogger(name):
-  logger = logging.getLogger(name)
-  handler = logging.StreamHandler(sys.stdout)
-  formatter = CustomJsonFormatter('%(timestamp)s %(severity)s %(name)s %(message)s')
-  handler.setFormatter(formatter)
-  logger.addHandler(handler)
-  logger.setLevel(logging.INFO)
-  logger.propagate = False
-  return logger
+class JsonFormatter(logging.Formatter):
+    """Format container logs for Fluent Bit and CloudWatch ingestion."""
+
+    _reserved_attributes = set(logging.makeLogRecord({}).__dict__)
+
+    def format(self, record):
+        payload = {
+            "timestamp": datetime.fromtimestamp(
+                record.created, timezone.utc
+            ).isoformat(),
+            "severity": record.levelname,
+            "service.name": record.name,
+            "message": record.getMessage(),
+        }
+        for key, value in record.__dict__.items():
+            if key not in self._reserved_attributes and key not in payload:
+                payload[key] = value
+        if record.exc_info:
+            payload["exception"] = self.formatException(record.exc_info)
+        return json.dumps(payload, default=str)
+
+
+def get_json_logger(name):
+    logger = logging.getLogger(name)
+    if not logger.handlers:
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(JsonFormatter())
+        logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+    return logger

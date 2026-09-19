@@ -23,9 +23,8 @@ RUN apk update \
     && apk add --no-cache g++ linux-headers \
     && rm -rf /var/cache/apk/*
 
-# get packages
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 FROM base
 
@@ -36,17 +35,25 @@ RUN apk update \
     && apk add --no-cache libstdc++ \
     && rm -rf /var/cache/apk/*
 
-# get packages
+LABEL org.opencontainers.image.title="AVOS Recommendation Service" \
+      org.opencontainers.image.description="Product recommendation gRPC service for African Vibe Online Shop" \
+      org.opencontainers.image.source="https://github.com/Gabinsime75/African-Vibe-Online-Shop-AVOS"
+
 WORKDIR /recommendationservice
 
-# Grab packages from builder
-COPY --from=builder /usr/local/lib/python3.14/ /usr/local/lib/python3.14/
+RUN addgroup -S avos && adduser -S -G avos avos
 
-# Add the application
-COPY . .
+COPY --from=builder /install /usr/local
+COPY --chown=avos:avos . .
 
-# set listen port
-ENV PORT="8080"
+ENV PORT="8080" \
+    MAX_WORKERS="10" \
+    MAX_RECOMMENDATIONS="5" \
+    CATALOG_TIMEOUT_SECONDS="3" \
+    SHUTDOWN_GRACE_SECONDS="5"
+
+USER avos
+
 EXPOSE 8080
 
 ENTRYPOINT ["python", "recommendation_server.py"]
