@@ -1,118 +1,111 @@
-// Copyright 2018 Google LLC
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2026 African Vibe Online Shop (AVOS)
+// SPDX-License-Identifier: Apache-2.0
 
 using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
-using Grpc.Core;
-using Microsoft.Extensions.Caching.Distributed;
-using Google.Protobuf;
+using Hipstershop;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using StackExchange.Redis;
 
-namespace cartservice.cartstore
+namespace cartservice.cartstore;
+
+/// <summary>
+/// Persists each AVOS cart as a Redis hash so item quantity updates are atomic.
+/// </summary>
+public sealed class RedisCartStore : ICartStore
 {
-    public class RedisCartStore : ICartStore
+    private const string DefaultKeyPrefix = "avos:cart";
+    private const int DefaultCartTtlHours = 168;
+
+    private readonly IDatabase _database;
+    private readonly ILogger<RedisCartStore> _logger;
+    private readonly string _keyPrefix;
+    private readonly TimeSpan _cartTtl;
+
+    public RedisCartStore(
+        IConnectionMultiplexer connection,
+        IConfiguration configuration,
+        ILogger<RedisCartStore> logger)
     {
-        private readonly IDistributedCache _cache;
+        _database = connection.GetDatabase();
+        _logger = logger;
+        _keyPrefix = configuration["REDIS_KEY_PREFIX"] ?? DefaultKeyPrefix;
 
-        public RedisCartStore(IDistributedCache cache)
+        var ttlHours = configuration.GetValue("CART_TTL_HOURS", DefaultCartTtlHours);
+        if (ttlHours <= 0)
         {
-            _cache = cache;
+            throw new InvalidOperationException("CART_TTL_HOURS must be greater than zero.");
         }
 
-        public async Task AddItemAsync(string userId, string productId, int quantity)
-        {
-            Console.WriteLine($"AddItemAsync called with userId={userId}, productId={productId}, quantity={quantity}");
+        _cartTtl = TimeSpan.FromHours(ttlHours);
+    }
 
-            try
-            {
-                Hipstershop.Cart cart;
-                var value = await _cache.GetAsync(userId);
-                if (value == null)
+    public async Task AddItemAsync(
+        string userId,
+        string productId,
+        int quantity,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var key = GetCartKey(userId);
+
+        await _database.HashIncrementAsync(key, productId, quantity).WaitAsync(cancellationToken);
+        await _database.KeyExpireAsync(key, _cartTtl).WaitAsync(cancellationToken);
+
+        _logger.LogDebug("Updated cart for user {UserId}", userId);
+    }
+
+    public async Task EmptyCartAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        await _database.KeyDeleteAsync(GetCartKey(userId)).WaitAsync(cancellationToken);
+        _logger.LogDebug("Emptied cart for user {UserId}", userId);
+    }
+
+    public async Task<Cart> GetCartAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var values = await _database.HashGetAllAsync(GetCartKey(userId)).WaitAsync(cancellationToken);
+        var response = new Cart();
+
+        if (values.Length == 0)
+        {
+            return response;
+        }
+
+        response.UserId = userId;
+        response.Items.AddRange(
+            values
+                .OrderBy(entry => entry.Name.ToString(), StringComparer.Ordinal)
+                .Select(entry => new CartItem
                 {
-                    cart = new Hipstershop.Cart();
-                    cart.UserId = userId;
-                    cart.Items.Add(new Hipstershop.CartItem { ProductId = productId, Quantity = quantity });
-                }
-                else
-                {
-                    cart = Hipstershop.Cart.Parser.ParseFrom(value);
-                    var existingItem = cart.Items.SingleOrDefault(i => i.ProductId == productId);
-                    if (existingItem == null)
-                    {
-                        cart.Items.Add(new Hipstershop.CartItem { ProductId = productId, Quantity = quantity });
-                    }
-                    else
-                    {
-                        existingItem.Quantity += quantity;
-                    }
-                }
-                await _cache.SetAsync(userId, cart.ToByteArray());
-            }
-            catch (Exception ex)
-            {
-                throw new RpcException(new Status(StatusCode.FailedPrecondition, $"Can't access cart storage. {ex}"));
-            }
-        }
+                    ProductId = entry.Name.ToString(),
+                    Quantity = (int)entry.Value
+                }));
 
-        public async Task EmptyCartAsync(string userId)
+        return response;
+    }
+
+    public async Task<bool> PingAsync(CancellationToken cancellationToken = default)
+    {
+        try
         {
-            Console.WriteLine($"EmptyCartAsync called with userId={userId}");
-
-            try
-            {
-                var cart = new Hipstershop.Cart();
-                await _cache.SetAsync(userId, cart.ToByteArray());
-            }
-            catch (Exception ex)
-            {
-                throw new RpcException(new Status(StatusCode.FailedPrecondition, $"Can't access cart storage. {ex}"));
-            }
+            await _database.PingAsync().WaitAsync(cancellationToken);
+            return true;
         }
-
-        public async Task<Hipstershop.Cart> GetCartAsync(string userId)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            Console.WriteLine($"GetCartAsync called with userId={userId}");
-
-            try
-            {
-                // Access the cart from the cache
-                var value = await _cache.GetAsync(userId);
-
-                if (value != null)
-                {
-                    return Hipstershop.Cart.Parser.ParseFrom(value);
-                }
-
-                // We decided to return empty cart in cases when user wasn't in the cache before
-                return new Hipstershop.Cart();
-            }
-            catch (Exception ex)
-            {
-                throw new RpcException(new Status(StatusCode.FailedPrecondition, $"Can't access cart storage. {ex}"));
-            }
+            throw;
         }
-
-        public bool Ping()
+        catch (Exception exception)
         {
-            try
-            {
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+            _logger.LogWarning(exception, "Redis health check failed");
+            return false;
         }
     }
+
+    private string GetCartKey(string userId) => $"{_keyPrefix}:{userId}";
 }

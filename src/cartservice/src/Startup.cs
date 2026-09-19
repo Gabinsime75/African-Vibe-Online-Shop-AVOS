@@ -1,84 +1,116 @@
+// Copyright 2026 African Vibe Online Shop (AVOS)
+// SPDX-License-Identifier: Apache-2.0
+
 using System;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Microsoft.Extensions.Hosting;
 using cartservice.cartstore;
 using cartservice.services;
-using Microsoft.Extensions.Caching.StackExchangeRedis;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+using StackExchange.Redis;
 
-namespace cartservice
+namespace cartservice;
+
+public sealed class Startup
 {
-    public class Startup
+    private readonly IWebHostEnvironment _environment;
+
+    public Startup(IConfiguration configuration, IWebHostEnvironment environment)
     {
-        public Startup(IConfiguration configuration)
+        Configuration = configuration;
+        _environment = environment;
+    }
+
+    public IConfiguration Configuration { get; }
+
+    public void ConfigureServices(IServiceCollection services)
+    {
+        var storeMode = Configuration["CART_STORE"]
+            ?? (_environment.IsDevelopment() || _environment.IsEnvironment("Testing") ? "memory" : "redis");
+
+        if (string.Equals(storeMode, "memory", StringComparison.OrdinalIgnoreCase))
         {
-            Configuration = configuration;
+            if (!_environment.IsDevelopment() && !_environment.IsEnvironment("Testing"))
+            {
+                throw new InvalidOperationException("CART_STORE=memory is permitted only in Development or Testing.");
+            }
+
+            services.AddSingleton<ICartStore, InMemoryCartStore>();
+        }
+        else if (string.Equals(storeMode, "redis", StringComparison.OrdinalIgnoreCase))
+        {
+            var redisAddress = Configuration["REDIS_ADDR"];
+            if (string.IsNullOrWhiteSpace(redisAddress))
+            {
+                throw new InvalidOperationException("REDIS_ADDR is required when CART_STORE=redis.");
+            }
+
+            var redisOptions = ConfigurationOptions.Parse(redisAddress);
+            redisOptions.AbortOnConnectFail = false;
+            redisOptions.ConnectRetry = 3;
+            redisOptions.ConnectTimeout = Configuration.GetValue("REDIS_CONNECT_TIMEOUT_MS", 5000);
+            redisOptions.Ssl = Configuration.GetValue("REDIS_TLS", !_environment.IsDevelopment());
+
+            var redisUsername = Configuration["REDIS_USERNAME"];
+            var redisPassword = Configuration["REDIS_PASSWORD"];
+            if (!string.IsNullOrWhiteSpace(redisUsername))
+            {
+                redisOptions.User = redisUsername;
+            }
+
+            if (!string.IsNullOrWhiteSpace(redisPassword))
+            {
+                redisOptions.Password = redisPassword;
+            }
+
+            services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(redisOptions));
+            services.AddSingleton<ICartStore, RedisCartStore>();
+        }
+        else
+        {
+            throw new InvalidOperationException("CART_STORE must be either 'redis' or 'memory'.");
         }
 
-        public IConfiguration Configuration { get; }
-        
-        // This method gets called by the runtime. Use this method to add services to the container.
-        // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
-        public void ConfigureServices(IServiceCollection services)
+        services.AddGrpc(options =>
         {
-            string redisAddress = Configuration["REDIS_ADDR"];
-            string spannerProjectId = Configuration["SPANNER_PROJECT"];
-            string spannerConnectionString = Configuration["SPANNER_CONNECTION_STRING"];
-            string alloyDBConnectionString = Configuration["ALLOYDB_PRIMARY_IP"];
+            options.EnableDetailedErrors = _environment.IsDevelopment();
+            options.MaxReceiveMessageSize = 64 * 1024;
+        });
 
-            if (!string.IsNullOrEmpty(redisAddress))
-            {
-                services.AddStackExchangeRedisCache(options =>
-                {
-                    options.Configuration = redisAddress;
-                });
-                services.AddSingleton<ICartStore, RedisCartStore>();
-            }
-            else if (!string.IsNullOrEmpty(spannerProjectId) || !string.IsNullOrEmpty(spannerConnectionString))
-            {
-                services.AddSingleton<ICartStore, SpannerCartStore>();
-            }
-            else if (!string.IsNullOrEmpty(alloyDBConnectionString))
-            {
-                Console.WriteLine("Creating AlloyDB cart store");
-                services.AddSingleton<ICartStore, AlloyDBCartStore>();
-            }
-            else
-            {
-                Console.WriteLine("Redis cache host(hostname+port) was not specified. Starting a cart service using in memory store");
-                services.AddDistributedMemoryCache();
-                services.AddSingleton<ICartStore, RedisCartStore>();
-            }
+        if (Configuration.GetValue("ENABLE_OTEL", true))
+        {
+            services
+                .AddOpenTelemetry()
+                .ConfigureResource(resource => resource.AddService("cartservice"))
+                .WithTracing(tracing => tracing
+                    .AddAspNetCoreInstrumentation()
+                    .AddOtlpExporter())
+                .WithMetrics(metrics => metrics
+                    .AddAspNetCoreInstrumentation()
+                    .AddRuntimeInstrumentation()
+                    .AddOtlpExporter());
+        }
+    }
 
-
-            services.AddGrpc();
+    public void Configure(IApplicationBuilder app, IWebHostEnvironment environment)
+    {
+        if (environment.IsDevelopment())
+        {
+            app.UseDeveloperExceptionPage();
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        app.UseRouting();
+        app.UseEndpoints(endpoints =>
         {
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
-
-            app.UseRouting();
-
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapGrpcService<CartService>();
-                endpoints.MapGrpcService<cartservice.services.HealthCheckService>();
-
-                endpoints.MapGet("/", async context =>
-                {
-                    await context.Response.WriteAsync("Communication with gRPC endpoints must be made through a gRPC client. To learn how to create a client, visit: https://go.microsoft.com/fwlink/?linkid=2086909");
-                });
-            });
-        }
+            endpoints.MapGrpcService<CartService>();
+            endpoints.MapGrpcService<HealthCheckService>();
+            endpoints.MapGet("/", async context =>
+                await context.Response.WriteAsync("AVOS Cart Service is running. Use a gRPC client to connect."));
+        });
     }
 }
