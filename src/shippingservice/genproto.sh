@@ -1,25 +1,24 @@
-#!/bin/bash -eu
-#
-# Copyright 2018 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+#!/usr/bin/env bash
+set -euo pipefail
 
-# [START gke_shippingservice_genproto]
+service_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+proto_dir="$service_dir/../../protos"
+output_dir="$service_dir/genproto"
 
-PATH=$PATH:$(go env GOPATH)/bin
-protodir=../../protos
-outdir=./genproto
+if [[ ! -f "$proto_dir/demo.proto" ]]; then
+	echo "Shared protobuf file not found: $proto_dir/demo.proto" >&2
+	exit 1
+fi
 
-protoc --proto_path=$protodir --go_out=./$outdir --go_opt=paths=source_relative --go-grpc_out=./$outdir --go-grpc_opt=paths=source_relative $protodir/demo.proto
+export PATH="$PATH:$(go env GOPATH)/bin"
+mkdir -p "$output_dir"
 
-# [END gke_shippingservice_genproto]
+protoc \
+	--proto_path="$proto_dir" \
+	--go_out="$output_dir" \
+	--go_opt=paths=source_relative \
+	--go-grpc_out="$output_dir" \
+	--go-grpc_opt=paths=source_relative \
+	"$proto_dir/demo.proto"
+
+echo "Shipping Service protobuf files regenerated."

@@ -1,90 +1,95 @@
 // Copyright 2018 Google LLC
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Modifications copyright 2026 African Vibe Online Shop (AVOS)
+// SPDX-License-Identifier: Apache-2.0
 
 package main
 
 import (
+	"context"
+	"regexp"
 	"testing"
 
-	"golang.org/x/net/context"
-
-	pb "github.com/GoogleCloudPlatform/microservices-demo/src/shippingservice/genproto"
+	pb "github.com/Gabinsime75/African-Vibe-Online-Shop-AVOS/src/shippingservice/genproto"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
-// TestGetQuote is a basic check on the GetQuote RPC service.
-func TestGetQuote(t *testing.T) {
-	s := server{}
-
-	// A basic test case to test logic and protobuf interactions.
-	req := &pb.GetQuoteRequest{
-		Address: &pb.Address{
-			StreetAddress: "Muffin Man",
-			City:          "London",
-			State:         "",
-			Country:       "England",
-		},
-		Items: []*pb.CartItem{
-			{
-				ProductId: "23",
-				Quantity:  1,
-			},
-			{
-				ProductId: "46",
-				Quantity:  3,
-			},
-		},
-	}
-
-	res, err := s.GetQuote(context.Background(), req)
+func TestGetQuoteUsesTotalQuantity(t *testing.T) {
+	service := &server{}
+	response, err := service.GetQuote(context.Background(), &pb.GetQuoteRequest{Items: []*pb.CartItem{
+		{ProductId: "avos-textile-01", Quantity: 1},
+		{ProductId: "avos-art-02", Quantity: 3},
+	}})
 	if err != nil {
-		t.Errorf("TestGetQuote (%v) failed", err)
+		t.Fatalf("GetQuote returned error: %v", err)
 	}
-	if res.CostUsd.GetUnits() != 8 || res.CostUsd.GetNanos() != 990000000 {
-		t.Errorf("TestGetQuote: Quote value '%d.%d' does not match expected '%s'", res.CostUsd.GetUnits(), res.CostUsd.GetNanos(), "11.220000000")
+	// $4.99 base + (4 × $1.25) = $9.99.
+	if response.GetCostUsd().GetUnits() != 9 || response.GetCostUsd().GetNanos() != 990_000_000 {
+		t.Fatalf("unexpected quote: %v", response.GetCostUsd())
 	}
 }
 
-// TestShipOrder is a basic check on the ShipOrder RPC service.
-func TestShipOrder(t *testing.T) {
-	s := server{}
-
-	// A basic test case to test logic and protobuf interactions.
-	req := &pb.ShipOrderRequest{
-		Address: &pb.Address{
-			StreetAddress: "Muffin Man",
-			City:          "London",
-			State:         "",
-			Country:       "England",
-		},
-		Items: []*pb.CartItem{
-			{
-				ProductId: "23",
-				Quantity:  1,
-			},
-			{
-				ProductId: "46",
-				Quantity:  3,
-			},
-		},
-	}
-
-	res, err := s.ShipOrder(context.Background(), req)
+func TestGetQuoteAllowsEmptyCart(t *testing.T) {
+	service := &server{}
+	response, err := service.GetQuote(context.Background(), &pb.GetQuoteRequest{})
 	if err != nil {
-		t.Errorf("TestShipOrder (%v) failed", err)
+		t.Fatalf("GetQuote returned error: %v", err)
 	}
-	// @todo improve quality of this test to check for a pattern such as '[A-Z]{2}-\d+-\d+'.
-	if len(res.TrackingId) != 18 {
-		t.Errorf("TestShipOrder: Tracking ID is malformed - has %d characters, %d expected", len(res.TrackingId), 18)
+	if response.GetCostUsd().GetUnits() != 0 || response.GetCostUsd().GetNanos() != 0 {
+		t.Fatalf("empty-cart quote must be zero: %v", response.GetCostUsd())
+	}
+}
+
+func TestGetQuoteRejectsInvalidQuantity(t *testing.T) {
+	service := &server{}
+	_, err := service.GetQuote(context.Background(), &pb.GetQuoteRequest{Items: []*pb.CartItem{
+		{ProductId: "avos-textile-01", Quantity: 0},
+	}})
+	if status.Code(err) != codes.InvalidArgument {
+		t.Fatalf("expected InvalidArgument, got %v", err)
+	}
+}
+
+func TestShipOrderCreatesAVOSTrackingID(t *testing.T) {
+	service := &server{}
+	response, err := service.ShipOrder(context.Background(), &pb.ShipOrderRequest{
+		Address: &pb.Address{
+			StreetAddress: "100 Market Street",
+			City:          "Oklahoma City",
+			State:         "OK",
+			Country:       "United States",
+			ZipCode:       73179,
+		},
+		Items: []*pb.CartItem{{ProductId: "avos-textile-01", Quantity: 1}},
+	})
+	if err != nil {
+		t.Fatalf("ShipOrder returned error: %v", err)
+	}
+	if !regexp.MustCompile(`^AV-[A-HJ-NP-Z2-9]{12}$`).MatchString(response.GetTrackingId()) {
+		t.Fatalf("malformed tracking ID: %q", response.GetTrackingId())
+	}
+}
+
+func TestShipOrderRejectsMissingAddress(t *testing.T) {
+	service := &server{}
+	_, err := service.ShipOrder(context.Background(), &pb.ShipOrderRequest{
+		Items: []*pb.CartItem{{ProductId: "avos-textile-01", Quantity: 1}},
+	})
+	if status.Code(err) != codes.InvalidArgument {
+		t.Fatalf("expected InvalidArgument, got %v", err)
+	}
+}
+
+func TestCreateTrackingIDIsUnique(t *testing.T) {
+	first, err := CreateTrackingID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := CreateTrackingID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first == second {
+		t.Fatal("tracking IDs must be unique")
 	}
 }
