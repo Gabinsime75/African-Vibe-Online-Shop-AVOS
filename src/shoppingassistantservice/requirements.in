@@ -1,6 +1,8 @@
-flask==3.1.2
-langchain-google-genai==4.1.2
-langchain==1.2.0
-pillow==12.0.0
-langchain-google-alloydb-pg==0.13.0
-google-cloud-secret-manager==2.26.0
+boto3==1.43.98
+grpcio==1.84.0
+grpcio-health-checking==1.84.0
+opensearch-py==3.2.0
+opentelemetry-api==1.44.0
+opentelemetry-exporter-otlp-proto-grpc==1.44.0
+opentelemetry-sdk==1.44.0
+protobuf==7.36.2

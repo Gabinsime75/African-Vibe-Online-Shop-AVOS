@@ -1,44 +1,26 @@
-# Copyright 2024 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      https://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+FROM python:3.12.12-slim@sha256:f3fa41d74a768c2fce8016b98c191ae8c1bacd8f1152870a3f9f87d350920b7c AS builder
 
-FROM --platform=$BUILDPLATFORM python:3.14.2-slim@sha256:9b81fe9acff79e61affb44aaf3b6ff234392e8ca477cb86c9f7fd11732ce9b6a AS base
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1
 
-FROM base AS builder
-
-RUN apt-get -qq update \
-    && apt-get install -y --no-install-recommends g++ \
-    && rm -rf /var/lib/apt/lists/*
-
-# get packages
+WORKDIR /build
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+RUN python -m pip install --prefix=/install -r requirements.txt
 
-FROM base
-# Enable unbuffered logging
-ENV PYTHONUNBUFFERED=1
+FROM python:3.12.12-slim@sha256:f3fa41d74a768c2fce8016b98c191ae8c1bacd8f1152870a3f9f87d350920b7c
 
-# get packages
-WORKDIR /shoppingassistantservice
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PORT=8080
 
-# Grab packages from builder
-COPY --from=builder /usr/local/lib/python3.14/ /usr/local/lib/python3.14/
+RUN groupadd --system --gid 10001 avos \
+    && useradd --system --uid 10001 --gid avos --home-dir /app --shell /usr/sbin/nologin avos
 
-# Add the application
-COPY . .
+WORKDIR /app
+COPY --from=builder /install /usr/local
+COPY shoppingassistantservice.py shoppingassistant_pb2.py shoppingassistant_pb2_grpc.py ./
 
-# set listen port
-ENV PORT "8080"
+USER 10001:10001
 EXPOSE 8080
 
 ENTRYPOINT ["python", "shoppingassistantservice.py"]

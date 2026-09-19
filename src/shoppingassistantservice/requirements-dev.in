@@ -1,0 +1,3 @@
+-r requirements.in
+grpcio-tools==1.84.0
+pip-tools==7.5.2

@@ -125,3 +125,22 @@ func (fe *frontendServer) getAd(ctx context.Context, ctxKeys []string) ([]*pb.Ad
 	})
 	return resp.GetAds(), errors.Wrap(err, "failed to get ads")
 }
+
+func (fe *frontendServer) getShoppingAssistantRecommendations(
+	ctx context.Context,
+	userID string,
+	prompt string,
+	image []byte,
+	imageMediaType string,
+) (*pb.ShoppingAssistantResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	return pb.NewShoppingAssistantServiceClient(fe.shoppingAssistantSvcConn).
+		GetRecommendations(ctx, &pb.ShoppingAssistantRequest{
+			UserId:         userID,
+			Prompt:         prompt,
+			Image:          image,
+			ImageMediaType: imageMediaType,
+		})
+}

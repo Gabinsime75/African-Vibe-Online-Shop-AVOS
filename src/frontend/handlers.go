@@ -16,10 +16,10 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"html/template"
-	"io"
 	"math/rand"
 	"net/http"
 	"os"
@@ -199,7 +199,7 @@ func (fe *frontendServer) addToCartHandler(w http.ResponseWriter, r *http.Reques
 		renderHTTPError(log, r, w, errors.Wrap(err, "failed to add to cart"), http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("location", baseUrl + "/cart")
+	w.Header().Set("location", baseUrl+"/cart")
 	w.WriteHeader(http.StatusFound)
 }
 
@@ -211,7 +211,7 @@ func (fe *frontendServer) emptyCartHandler(w http.ResponseWriter, r *http.Reques
 		renderHTTPError(log, r, w, errors.Wrap(err, "failed to empty cart"), http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("location", baseUrl + "/")
+	w.Header().Set("location", baseUrl+"/")
 	w.WriteHeader(http.StatusFound)
 }
 
@@ -390,7 +390,7 @@ func (fe *frontendServer) logoutHandler(w http.ResponseWriter, r *http.Request) 
 		c.MaxAge = -1
 		http.SetCookie(w, c)
 	}
-	w.Header().Set("Location", baseUrl + "/")
+	w.Header().Set("Location", baseUrl+"/")
 	w.WriteHeader(http.StatusFound)
 }
 
@@ -417,50 +417,75 @@ func (fe *frontendServer) getProductByID(w http.ResponseWriter, r *http.Request)
 
 func (fe *frontendServer) chatBotHandler(w http.ResponseWriter, r *http.Request) {
 	log := r.Context().Value(ctxKeyLog{}).(logrus.FieldLogger)
-	type Response struct {
+
+	const maxRequestBytes = 4 * 1024 * 1024
+	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBytes)
+
+	type Request struct {
 		Message string `json:"message"`
+		Image   string `json:"image"`
 	}
 
-	type LLMResponse struct {
-		Content string         `json:"content"`
-		Details map[string]any `json:"details"`
+	type Response struct {
+		Message    string   `json:"message"`
+		ProductIDs []string `json:"product_ids"`
 	}
 
-	var response LLMResponse
-
-	url := "http://" + fe.shoppingAssistantSvcAddr
-	req, err := http.NewRequest(http.MethodPost, url, r.Body)
-	if err != nil {
-		renderHTTPError(log, r, w, errors.Wrap(err, "failed to create request"), http.StatusInternalServerError)
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		renderHTTPError(log, r, w, errors.Wrap(err, "failed to send request"), http.StatusInternalServerError)
+	var request Request
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		renderHTTPError(log, r, w, errors.Wrap(err, "invalid assistant request"), http.StatusBadRequest)
 		return
 	}
 
-	body, err := io.ReadAll(res.Body)
+	image, mediaType, err := decodeImageDataURL(request.Image)
 	if err != nil {
-		renderHTTPError(log, r, w, errors.Wrap(err, "failed to read response"), http.StatusInternalServerError)
+		renderHTTPError(log, r, w, err, http.StatusBadRequest)
 		return
 	}
 
-	fmt.Printf("%+v\n", body)
-	fmt.Printf("%+v\n", res)
-
-	err = json.Unmarshal(body, &response)
+	response, err := fe.getShoppingAssistantRecommendations(
+		r.Context(), sessionID(r), strings.TrimSpace(request.Message), image, mediaType,
+	)
 	if err != nil {
-		renderHTTPError(log, r, w, errors.Wrap(err, "failed to unmarshal body"), http.StatusInternalServerError)
+		renderHTTPError(log, r, w, errors.Wrap(err, "shopping assistant request failed"), http.StatusBadGateway)
 		return
 	}
 
-	// respond with the same message
-	json.NewEncoder(w).Encode(Response{Message: response.Content})
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(Response{
+		Message: response.GetContent(), ProductIDs: response.GetProductIds(),
+	}); err != nil {
+		log.WithError(err).Warn("failed to encode assistant response")
+	}
+}
 
-	w.WriteHeader(http.StatusOK)
+func decodeImageDataURL(value string) ([]byte, string, error) {
+	if strings.TrimSpace(value) == "" {
+		return nil, "", nil
+	}
+
+	const marker = ";base64,"
+	if !strings.HasPrefix(value, "data:") {
+		return nil, "", errors.New("image must be a base64 data URL")
+	}
+	parts := strings.SplitN(strings.TrimPrefix(value, "data:"), marker, 2)
+	if len(parts) != 2 {
+		return nil, "", errors.New("image data URL must use base64 encoding")
+	}
+	mediaType := strings.ToLower(parts[0])
+	switch mediaType {
+	case "image/jpeg", "image/png", "image/gif", "image/webp":
+	default:
+		return nil, "", errors.New("image must be JPEG, PNG, GIF, or WebP")
+	}
+	image, err := base64.StdEncoding.DecodeString(parts[1])
+	if err != nil {
+		return nil, "", errors.Wrap(err, "image contains invalid base64 data")
+	}
+	if len(image) > 3*1024*1024 {
+		return nil, "", errors.New("image must not exceed 3 MiB")
+	}
+	return image, mediaType, nil
 }
 
 func (fe *frontendServer) setCurrencyHandler(w http.ResponseWriter, r *http.Request) {

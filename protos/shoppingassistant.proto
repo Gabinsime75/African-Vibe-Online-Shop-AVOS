@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package avos.shoppingassistant.v1;
+
+option go_package = "github.com/Gabinsime75/African-Vibe-Online-Shop-AVOS/src/frontend/genproto;hipstershop";
+
+// ShoppingAssistantService recommends AVOS catalog products using a customer's
+// request and an optional room or style image.
+service ShoppingAssistantService {
+  rpc GetRecommendations(ShoppingAssistantRequest) returns (ShoppingAssistantResponse) {}
+}
+
+message ShoppingAssistantRequest {
+  string user_id = 1;
+  string prompt = 2;
+  bytes image = 3;
+  string image_media_type = 4;
+}
+
+message ShoppingAssistantResponse {
+  string content = 1;
+  repeated string product_ids = 2;
+}

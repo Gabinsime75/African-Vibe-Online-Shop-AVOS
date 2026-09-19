@@ -1,0 +1,25 @@
+{
+  "settings": {
+    "index": {
+      "knn": true
+    }
+  },
+  "mappings": {
+    "properties": {
+      "id": { "type": "keyword" },
+      "name": { "type": "text" },
+      "description": { "type": "text" },
+      "categories": { "type": "keyword" },
+      "picture": { "type": "keyword", "index": false },
+      "product_embedding": {
+        "type": "knn_vector",
+        "dimension": 1024,
+        "method": {
+          "name": "hnsw",
+          "space_type": "cosinesimil",
+          "engine": "faiss"
+        }
+      }
+    }
+  }
+}
