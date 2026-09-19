@@ -1,70 +1,66 @@
-/*
- * Copyright 2018 Google LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+// Copyright 2018 Google LLC
+// Modifications copyright 2026 African Vibe Online Shop (AVOS)
+// SPDX-License-Identifier: Apache-2.0
 
 'use strict';
 
-const logger = require('./logger')
+const logger = require('./logger');
+const { startTelemetry } = require('./telemetry');
 
-if (process.env.DISABLE_PROFILER) {
-  logger.info("Profiler disabled.")
-} else {
-  logger.info("Profiler enabled.")
-  
+// Telemetry starts before server.js loads grpc-js so instrumentation can patch it.
+const telemetry = startTelemetry(logger);
+const grpc = require('@grpc/grpc-js');
+const { createServer } = require('./server');
+
+const DEFAULT_PORT = '50051';
+
+async function stopTelemetry () {
+  try {
+    await telemetry.shutdown();
+  } catch (error) {
+    logger.warn({ error_type: error.name }, 'failed to flush telemetry');
+  }
 }
 
+function main () {
+  const port = process.env.PORT || DEFAULT_PORT;
+  if (!/^[0-9]{1,5}$/.test(port) || Number(port) < 1 || Number(port) > 65535) {
+    logger.fatal({ port }, 'PORT must be between 1 and 65535');
+    stopTelemetry().finally(() => { process.exitCode = 1; });
+    return;
+  }
 
-if (process.env.ENABLE_TRACING == "1") {
-  logger.info("Tracing enabled.")
-
-  const { resourceFromAttributes } = require('@opentelemetry/resources');
-
-  const { ATTR_SERVICE_NAME }= require('@opentelemetry/semantic-conventions');
-
-  const { GrpcInstrumentation } = require('@opentelemetry/instrumentation-grpc');
-  const { registerInstrumentations } = require('@opentelemetry/instrumentation');
-  const opentelemetry = require('@opentelemetry/sdk-node');
-
-  const { OTLPTraceExporter } = require('@opentelemetry/exporter-otlp-grpc');
-
-  const collectorUrl = process.env.COLLECTOR_SERVICE_ADDR;
-  const traceExporter = new OTLPTraceExporter({url: collectorUrl});
-
-  const sdk = new opentelemetry.NodeSDK({
-    resource: resourceFromAttributes({
-      [ATTR_SERVICE_NAME]: process.env.OTEL_SERVICE_NAME || 'paymentservice',
-    }),
-    traceExporter: traceExporter,
+  const server = createServer();
+  server.bindAsync(`[::]:${port}`, grpc.ServerCredentials.createInsecure(), (error, boundPort) => {
+    if (error) {
+      logger.fatal({ error_type: error.name }, 'failed to bind gRPC server');
+      stopTelemetry().finally(() => { process.exitCode = 1; });
+      return;
+    }
+    logger.info({ port: boundPort }, 'AVOS Payment Service listening');
   });
 
-  registerInstrumentations({
-    instrumentations: [new GrpcInstrumentation()]
-  });
+  let shuttingDown = false;
+  for (const signal of ['SIGINT', 'SIGTERM']) {
+    process.on(signal, () => {
+      if (shuttingDown) return;
+      shuttingDown = true;
+      logger.info({ signal }, 'shutdown requested');
 
-  sdk.start()
-} else {
-  logger.info("Tracing disabled.")
+      const forceTimer = setTimeout(() => {
+        logger.warn('graceful shutdown timed out; forcing gRPC server stop');
+        server.forceShutdown();
+      }, 10_000);
+      forceTimer.unref();
+
+      server.tryShutdown(async () => {
+        clearTimeout(forceTimer);
+        await stopTelemetry();
+      });
+    });
+  }
 }
 
+if (require.main === module) main();
 
-const path = require('path');
-const HipsterShopServer = require('./server');
-
-const PORT = process.env['PORT'];
-const PROTO_PATH = path.join(__dirname, '/proto/');
-
-const server = new HipsterShopServer(PROTO_PATH, PORT);
-
-server.listen();
+module.exports = { main };

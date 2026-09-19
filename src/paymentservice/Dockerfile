@@ -1,41 +1,27 @@
-# Copyright 2020 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Copyright 2026 African Vibe Online Shop (AVOS)
+# SPDX-License-Identifier: Apache-2.0
 
-FROM --platform=$BUILDPLATFORM node:20.20.0-alpine@sha256:3960ed74dfe320a67bf8da9555b6bade25ebda2b22b6081d2f60fd7d5d430e9c AS builder
-
-RUN apk add --no-cache \
-    python3 \
-    make \
-    g++
+FROM node:24.21.0-alpine AS dependencies
 
 WORKDIR /usr/src/app
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev --ignore-scripts \
+    && npm cache clean --force
 
-COPY package*.json ./
+FROM node:24.21.0-alpine
 
-RUN npm ci --omit=dev
+LABEL org.opencontainers.image.title="AVOS Payment Service" \
+      org.opencontainers.image.description="Simulated gRPC payment processor for African Vibe Online Shop" \
+      org.opencontainers.image.source="https://github.com/Gabinsime75/African-Vibe-Online-Shop-AVOS"
 
-
-FROM alpine:3.23.2@sha256:865b95f46d98cf867a156fe4a135ad3fe50d2056aa3f25ed31662dff6da4eb62
-
-RUN apk upgrade --no-cache \
-    && apk add --no-cache nodejs
+ENV NODE_ENV=production \
+    PORT=50051
 
 WORKDIR /usr/src/app
+COPY --from=dependencies --chown=node:node /usr/src/app/node_modules ./node_modules
+COPY --chown=node:node . .
 
-COPY --from=builder /usr/src/app/node_modules ./node_modules
-COPY . .
-
+USER node
 EXPOSE 50051
 
 ENTRYPOINT ["node", "index.js"]

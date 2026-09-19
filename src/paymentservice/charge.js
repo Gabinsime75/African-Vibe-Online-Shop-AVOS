@@ -1,86 +1,149 @@
 // Copyright 2018 Google LLC
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Modifications copyright 2026 African Vibe Online Shop (AVOS)
+// SPDX-License-Identifier: Apache-2.0
 
-const cardValidator = require('simple-card-validator');
-const { v4: uuidv4 } = require('uuid');
-const pino = require('pino');
+'use strict';
 
-const logger = pino({
-  name: 'paymentservice-charge',
-  messageKey: 'message',
-  formatters: {
-    level (logLevelString, logLevelNum) {
-      return { severity: logLevelString }
-    }
-  }
-});
+const { randomUUID } = require('node:crypto');
 
+const NANO_SCALE = 1_000_000_000n;
+const MAX_CHARGE_UNITS = 1_000_000_000n;
+const CURRENCY_CODE_PATTERN = /^[A-Z]{3}$/;
 
-class CreditCardError extends Error {
-  constructor (message) {
+class PaymentValidationError extends Error {
+  constructor (message, kind = 'invalid') {
     super(message);
-    this.code = 400; // Invalid argument error
+    this.name = 'PaymentValidationError';
+    this.kind = kind;
   }
 }
 
-class InvalidCreditCard extends CreditCardError {
-  constructor (cardType) {
-    super(`Credit card info is invalid`);
+function charge (request, now = new Date()) {
+  if (request === null || typeof request !== 'object') {
+    throw new PaymentValidationError('charge request is required');
   }
+
+  const amount = validateAmount(request.amount);
+  const card = validateCard(request.credit_card, now);
+
+  return {
+    response: { transaction_id: randomUUID() },
+    audit: {
+      amount_currency: amount.currencyCode,
+      amount_units: amount.units.toString(),
+      card_type: card.type,
+      card_last_four: card.lastFour
+    }
+  };
 }
 
-class UnacceptedCreditCard extends CreditCardError {
-  constructor (cardType) {
-    super(`Sorry, we cannot process ${cardType} credit cards. Only VISA or MasterCard is accepted.`);
+function validateAmount (amount) {
+  if (amount === null || typeof amount !== 'object') {
+    throw new PaymentValidationError('amount is required');
   }
+
+  const currencyCode = typeof amount.currency_code === 'string'
+    ? amount.currency_code.trim()
+    : '';
+  if (!CURRENCY_CODE_PATTERN.test(currencyCode)) {
+    throw new PaymentValidationError('amount.currency_code must be a three-letter uppercase currency code');
+  }
+
+  let units;
+  try {
+    units = BigInt(amount.units ?? 0);
+  } catch {
+    throw new PaymentValidationError('amount.units must be a signed integer');
+  }
+
+  const nanos = Number(amount.nanos ?? 0);
+  if (!Number.isInteger(nanos) || nanos < -999_999_999 || nanos > 999_999_999) {
+    throw new PaymentValidationError('amount.nanos must be between -999999999 and 999999999');
+  }
+  if ((units > 0n && nanos < 0) || (units < 0n && nanos > 0)) {
+    throw new PaymentValidationError('amount.units and amount.nanos must use compatible signs');
+  }
+
+  const totalNanos = (units * NANO_SCALE) + BigInt(nanos);
+  if (totalNanos <= 0n) {
+    throw new PaymentValidationError('charge amount must be greater than zero');
+  }
+  if (totalNanos > MAX_CHARGE_UNITS * NANO_SCALE) {
+    throw new PaymentValidationError('charge amount exceeds the supported limit');
+  }
+
+  return { currencyCode, units, nanos };
 }
 
-class ExpiredCreditCard extends CreditCardError {
-  constructor (number, month, year) {
-    super(`Your credit card (ending ${number.substr(-4)}) expired on ${month}/${year}`);
+function validateCard (creditCard, now) {
+  if (creditCard === null || typeof creditCard !== 'object') {
+    throw new PaymentValidationError('credit_card is required');
   }
+
+  const number = String(creditCard.credit_card_number || '').replace(/[ -]/g, '');
+  if (!/^\d{12,19}$/.test(number) || !passesLuhn(number)) {
+    throw new PaymentValidationError('credit card information is invalid');
+  }
+
+  const type = detectAcceptedCardType(number);
+  if (!type) {
+    throw new PaymentValidationError('only Visa or Mastercard is accepted', 'unsupported_card');
+  }
+
+  const month = Number(creditCard.credit_card_expiration_month);
+  const year = Number(creditCard.credit_card_expiration_year);
+  const currentMonth = now.getUTCMonth() + 1;
+  const currentYear = now.getUTCFullYear();
+  if (!Number.isInteger(month) || month < 1 || month > 12) {
+    throw new PaymentValidationError('credit card expiration month must be between 1 and 12');
+  }
+  if (!Number.isInteger(year) || year < currentYear || year > currentYear + 20) {
+    throw new PaymentValidationError('credit card expiration year is invalid');
+  }
+  if ((year * 12 + month) < (currentYear * 12 + currentMonth)) {
+    throw new PaymentValidationError(`credit card ending ${number.slice(-4)} is expired`, 'expired');
+  }
+
+  const cvv = Number(creditCard.credit_card_cvv);
+  if (!Number.isInteger(cvv) || cvv < 100 || cvv > 999) {
+    throw new PaymentValidationError('credit card CVV must be a three-digit number');
+  }
+
+  return { type, lastFour: number.slice(-4) };
 }
 
-/**
- * Verifies the credit card number and (pretend) charges the card.
- *
- * @param {*} request
- * @return transaction_id - a random uuid.
- */
-module.exports = function charge (request) {
-  const { amount, credit_card: creditCard } = request;
-  const cardNumber = creditCard.credit_card_number;
-  const cardInfo = cardValidator(cardNumber);
-  const {
-    card_type: cardType,
-    valid
-  } = cardInfo.getCardDetails();
+function detectAcceptedCardType (number) {
+  if ([13, 16, 19].includes(number.length) && number.startsWith('4')) return 'visa';
+  if (number.length !== 16) return null;
 
-  if (!valid) { throw new InvalidCreditCard(); }
+  const firstTwo = Number(number.slice(0, 2));
+  const firstFour = Number(number.slice(0, 4));
+  if ((firstTwo >= 51 && firstTwo <= 55) || (firstFour >= 2221 && firstFour <= 2720)) {
+    return 'mastercard';
+  }
+  return null;
+}
 
-  // Only VISA and mastercard is accepted, other card types (AMEX, dinersclub) will
-  // throw UnacceptedCreditCard error.
-  if (!(cardType === 'visa' || cardType === 'mastercard')) { throw new UnacceptedCreditCard(cardType); }
+function passesLuhn (number) {
+  let sum = 0;
+  let doubleDigit = false;
+  for (let index = number.length - 1; index >= 0; index -= 1) {
+    let digit = Number(number[index]);
+    if (doubleDigit) {
+      digit *= 2;
+      if (digit > 9) digit -= 9;
+    }
+    sum += digit;
+    doubleDigit = !doubleDigit;
+  }
+  return sum % 10 === 0;
+}
 
-  // Also validate expiration is > today.
-  const currentMonth = new Date().getMonth() + 1;
-  const currentYear = new Date().getFullYear();
-  const { credit_card_expiration_year: year, credit_card_expiration_month: month } = creditCard;
-  if ((currentYear * 12 + currentMonth) > (year * 12 + month)) { throw new ExpiredCreditCard(cardNumber.replace('-', ''), month, year); }
-
-  logger.info(`Transaction processed: ${cardType} ending ${cardNumber.substr(-4)} \
-    Amount: ${amount.currency_code}${amount.units}.${amount.nanos}`);
-
-  return { transaction_id: uuidv4() };
+module.exports = {
+  PaymentValidationError,
+  charge,
+  detectAcceptedCardType,
+  passesLuhn,
+  validateAmount,
+  validateCard
 };

@@ -1,106 +1,67 @@
 // Copyright 2018 Google LLC
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Modifications copyright 2026 African Vibe Online Shop (AVOS)
+// SPDX-License-Identifier: Apache-2.0
 
-const path = require('path');
+'use strict';
+
+const path = require('node:path');
 const grpc = require('@grpc/grpc-js');
 const protoLoader = require('@grpc/proto-loader');
+const { PaymentValidationError, charge } = require('./charge');
+const logger = require('./logger');
 
-const charge = require('./charge');
+const MAIN_PROTO_PATH = path.join(__dirname, 'proto/demo.proto');
+const HEALTH_PROTO_PATH = path.join(__dirname, 'proto/grpc/health/v1/health.proto');
 
-const logger = require('./logger')
-
-class HipsterShopServer {
-  constructor(protoRoot, port = HipsterShopServer.PORT) {
-    this.port = port;
-
-    this.packages = {
-      hipsterShop: this.loadProto(path.join(protoRoot, 'demo.proto')),
-      health: this.loadProto(path.join(protoRoot, 'grpc/health/v1/health.proto'))
-    };
-
-    this.server = new grpc.Server();
-    this.loadAllProtos(protoRoot);
-  }
-
-  /**
-   * Handler for PaymentService.Charge.
-   * @param {*} call  { ChargeRequest }
-   * @param {*} callback  fn(err, ChargeResponse)
-   */
-  static ChargeServiceHandler(call, callback) {
-    try {
-      logger.info(`PaymentService#Charge invoked with request ${JSON.stringify(call.request)}`);
-      const response = charge(call.request);
-      callback(null, response);
-    } catch (err) {
-      console.warn(err);
-      callback(err);
-    }
-  }
-
-  static CheckHandler(call, callback) {
-    callback(null, { status: 'SERVING' });
-  }
-
-
-  listen() {
-    const server = this.server 
-    const port = this.port
-    server.bindAsync(
-      `[::]:${port}`,
-      grpc.ServerCredentials.createInsecure(),
-      function () {
-        logger.info(`PaymentService gRPC server started on port ${port}`);
-        server.start();
-      }
-    );
-  }
-
-  loadProto(path) {
-    const packageDefinition = protoLoader.loadSync(
-      path,
-      {
-        keepCase: true,
-        longs: String,
-        enums: String,
-        defaults: true,
-        oneofs: true
-      }
-    );
-    return grpc.loadPackageDefinition(packageDefinition);
-  }
-
-  loadAllProtos(protoRoot) {
-    const hipsterShopPackage = this.packages.hipsterShop.hipstershop;
-    const healthPackage = this.packages.health.grpc.health.v1;
-
-    this.server.addService(
-      hipsterShopPackage.PaymentService.service,
-      {
-        charge: HipsterShopServer.ChargeServiceHandler.bind(this)
-      }
-    );
-
-    this.server.addService(
-      healthPackage.Health.service,
-      {
-        check: HipsterShopServer.CheckHandler.bind(this)
-      }
-    );
-  }
+function loadProto (protoPath) {
+  const definition = protoLoader.loadSync(protoPath, {
+    keepCase: true,
+    longs: String,
+    enums: String,
+    defaults: true,
+    oneofs: true
+  });
+  return grpc.loadPackageDefinition(definition);
 }
 
-HipsterShopServer.PORT = process.env.PORT;
+function createHandlers () {
+  return {
+    charge (call, callback) {
+      try {
+        const result = charge(call.request);
+        logger.info(result.audit, 'simulated payment transaction processed');
+        callback(null, result.response);
+      } catch (error) {
+        const expected = error instanceof PaymentValidationError;
+        logger[expected ? 'warn' : 'error']({
+          error_type: error.name,
+          validation_kind: expected ? error.kind : undefined
+        }, 'payment transaction rejected');
+        callback({
+          code: expected ? grpc.status.INVALID_ARGUMENT : grpc.status.INTERNAL,
+          details: expected ? error.message : 'payment processing failed'
+        });
+      }
+    },
 
-module.exports = HipsterShopServer;
+    check (_call, callback) {
+      callback(null, { status: 'SERVING' });
+    }
+  };
+}
+
+function createServer () {
+  const shopProto = loadProto(MAIN_PROTO_PATH).hipstershop;
+  const healthProto = loadProto(HEALTH_PROTO_PATH).grpc.health.v1;
+  const handlers = createHandlers();
+  const server = new grpc.Server({
+    'grpc.max_receive_message_length': 64 * 1024,
+    'grpc.max_send_message_length': 64 * 1024
+  });
+
+  server.addService(shopProto.PaymentService.service, { charge: handlers.charge });
+  server.addService(healthProto.Health.service, { check: handlers.check });
+  return server;
+}
+
+module.exports = { createHandlers, createServer };

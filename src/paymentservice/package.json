@@ -1,26 +1,28 @@
 {
-  "name": "paymentservice",
-  "version": "0.0.1",
-  "description": "Payment Microservice demo",
-  "repository": "https://github.com/GoogleCloudPlatform/microservices-demo",
+  "name": "@avos/paymentservice",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Simulated gRPC payment processor for African Vibe Online Shop",
+  "repository": "https://github.com/Gabinsime75/African-Vibe-Online-Shop-AVOS",
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "engines": {
+    "node": ">=20.6 <25"
   },
-  "author": "Jonathan Lui",
-  "license": "ISC",
+  "scripts": {
+    "start": "node index.js",
+    "check": "node --check index.js && node --check server.js && node --check charge.js && node --check telemetry.js && node --check logger.js",
+    "test": "node --test test/payment.test.js"
+  },
+  "license": "Apache-2.0",
   "dependencies": {
-    "@grpc/grpc-js": "^1.14.4",
-    "@grpc/proto-loader": "^0.8.1",
+    "@grpc/grpc-js": "1.14.4",
+    "@grpc/proto-loader": "0.8.1",
     "@opentelemetry/api": "1.9.0",
-    "@opentelemetry/exporter-trace-otlp-grpc": "^0.221.0",
-    "@opentelemetry/instrumentation-grpc": "^0.221.0",
-    "@opentelemetry/resources": "^2.10.0",
-    "@opentelemetry/sdk-node": "^0.221.0",
-    "@opentelemetry/sdk-trace-base": "^2.10.0",
+    "@opentelemetry/exporter-trace-otlp-grpc": "0.221.0",
+    "@opentelemetry/instrumentation-grpc": "0.221.0",
+    "@opentelemetry/resources": "2.10.0",
+    "@opentelemetry/sdk-node": "0.221.0",
     "@opentelemetry/semantic-conventions": "1.39.0",
-    "pino": "10.2.1",
-    "simple-card-validator": "^1.1.0",
-    "uuid": "^13.0.0"
+    "pino": "10.2.1"
   }
 }
