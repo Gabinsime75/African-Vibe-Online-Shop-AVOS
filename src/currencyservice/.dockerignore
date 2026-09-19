@@ -1,2 +1,12 @@
-client.js
+.git/
+.github/
 node_modules/
+coverage/
+test/
+*.log
+.env
+.env.*
+*.pem
+*.key
+README.md
+client.js

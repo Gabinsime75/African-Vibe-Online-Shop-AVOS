@@ -1,67 +1,42 @@
-/*
- *
- * Copyright 2015 gRPC authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- */
+// Copyright 2015 gRPC authors
+// Modifications copyright 2026 African Vibe Online Shop (AVOS)
+// SPDX-License-Identifier: Apache-2.0
 
-const path = require('path');
-const grpc = require('grpc');
+'use strict';
+
+const path = require('node:path');
+const grpc = require('@grpc/grpc-js');
+const protoLoader = require('@grpc/proto-loader');
 const pino = require('pino');
 
-const PROTO_PATH = path.join(__dirname, './proto/demo.proto');
-const PORT = 7000;
+const logger = pino({ name: 'avos-currencyservice-client' });
+const protoPath = path.join(__dirname, 'proto/demo.proto');
+const definition = protoLoader.loadSync(protoPath, {
+  keepCase: true,
+  longs: String,
+  enums: String,
+  defaults: true,
+  oneofs: true
+});
+const shopProto = grpc.loadPackageDefinition(definition).hipstershop;
+const address = process.env.CURRENCY_SERVICE_ADDR || 'localhost:7000';
+const client = new shopProto.CurrencyService(address, grpc.credentials.createInsecure());
 
-const shopProto = grpc.load(PROTO_PATH).hipstershop;
-const client = new shopProto.CurrencyService(`localhost:${PORT}`,
-  grpc.credentials.createInsecure());
-
-const logger = pino({
-  name: 'currencyservice-client',
-  messageKey: 'message',
-  formatters: {
-    level (logLevelString, logLevelNum) {
-      return { severity: logLevelString }
-    }
+client.getSupportedCurrencies({}, (error, response) => {
+  if (error) {
+    logger.error({ err: error }, 'unable to list supported currencies');
+    return;
   }
+  logger.info({ currencies: response.currency_codes }, 'supported currencies');
 });
 
-const request = {
-  from: {
-    currency_code: 'CHF',
-    units: 300,
-    nanos: 0
-  },
+client.convert({
+  from: { currency_code: 'USD', units: '100', nanos: 0 },
   to_code: 'EUR'
-};
-
-function _moneyToString (m) {
-  return `${m.units}.${m.nanos.toString().padStart(9,'0')} ${m.currency_code}`;
-}
-
-client.getSupportedCurrencies({}, (err, response) => {
-  if (err) {
-    logger.error(`Error in getSupportedCurrencies: ${err}`);
-  } else {
-    logger.info(`Currency codes: ${response.currency_codes}`);
+}, (error, response) => {
+  if (error) {
+    logger.error({ err: error }, 'conversion failed');
+    return;
   }
-});
-
-client.convert(request, (err, response) => {
-  if (err) {
-    logger.error(`Error in convert: ${err}`);
-  } else {
-    logger.log(`Convert: ${_moneyToString(request.from)} to ${_moneyToString(response)}`);
-  }
+  logger.info({ result: response }, 'conversion completed');
 });
