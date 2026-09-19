@@ -1,1 +1,14 @@
+.git/
+.github/
+bin/
+dist/
+coverage/
 vendor/
+*.out
+*.test
+*.log
+.env
+.env.*
+*.pem
+*.key
+README.md
