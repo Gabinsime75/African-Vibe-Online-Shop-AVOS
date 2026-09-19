@@ -1,51 +1,32 @@
-# Copyright 2020 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Copyright 2026 African Vibe Online Shop (AVOS)
+# SPDX-License-Identifier: Apache-2.0
 
-FROM --platform=$BUILDPLATFORM python:3.14.2-alpine@sha256:7af51ebeb83610fb69d633d5c61a2efb87efa4caf66b59862d624bb6ef788345 AS base
+FROM python:3.14.2-alpine AS dependencies
 
-FROM base AS builder
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1
 
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-
-RUN apk update \
-    && apk add --no-cache g++ linux-headers \
-    && rm -rf /var/cache/apk/*
-
-# get packages
+WORKDIR /install
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+RUN python -m pip install --prefix=/install/packages -r requirements.txt
 
-FROM base
+FROM python:3.14.2-alpine
 
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+LABEL org.opencontainers.image.title="AVOS Email Service" \
+      org.opencontainers.image.description="Simulated gRPC order-confirmation email service for African Vibe Online Shop" \
+      org.opencontainers.image.source="https://github.com/Gabinsime75/African-Vibe-Online-Shop-AVOS"
 
-# Enable Profiler
-ENV ENABLE_PROFILER=1
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PORT=8080
 
-RUN apk update \
-    && apk add --no-cache libstdc++ \
-    && rm -rf /var/cache/apk/*
+RUN addgroup -S avos && adduser -S -G avos -h /app avos
 
-WORKDIR /email_server
+WORKDIR /app
+COPY --from=dependencies /install/packages /usr/local
+COPY --chown=avos:avos . .
 
-# Grab packages from builder
-COPY --from=builder /usr/local/lib/python3.14/ /usr/local/lib/python3.14/
-
-# Add the application
-COPY . .
-
+USER avos
 EXPOSE 8080
-ENTRYPOINT [ "python", "email_server.py" ]
+
+ENTRYPOINT ["python", "email_server.py"]

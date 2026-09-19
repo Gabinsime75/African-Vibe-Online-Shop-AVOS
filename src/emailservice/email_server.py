@@ -1,200 +1,193 @@
-#!/usr/bin/python
-#
+#!/usr/bin/env python3
 # Copyright 2018 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Modifications copyright 2026 African Vibe Online Shop (AVOS)
+# SPDX-License-Identifier: Apache-2.0
+
+"""Simulated order-confirmation email service for AVOS."""
 
 from concurrent import futures
-import argparse
+from email.utils import parseaddr
 import os
-import sys
-import time
+from pathlib import Path
+import re
+import signal
+import threading
+
 import grpc
-import traceback
-from jinja2 import Environment, FileSystemLoader, select_autoescape, TemplateError
-from google.api_core.exceptions import GoogleAPICallError
-from google.auth.exceptions import DefaultCredentialsError
+from grpc_health.v1 import health, health_pb2, health_pb2_grpc
+from jinja2 import Environment, FileSystemLoader, StrictUndefined, TemplateError, select_autoescape
+from opentelemetry import trace
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.instrumentation.grpc import GrpcInstrumentorServer
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 import demo_pb2
 import demo_pb2_grpc
-from grpc_health.v1 import health_pb2
-from grpc_health.v1 import health_pb2_grpc
+from logger import get_json_logger
 
-from opentelemetry import trace
-from opentelemetry.instrumentation.grpc import GrpcInstrumentorServer
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 
-# @TODO: Temporarily removed in https://github.com/GoogleCloudPlatform/microservices-demo/pull/3196
-# import googlecloudprofiler
+DEFAULT_PORT = 8080
+MAX_MESSAGE_BYTES = 1024 * 1024
+EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+TEMPLATE_DIRECTORY = Path(__file__).resolve().parent / "templates"
 
-from logger import getJSONLogger
-logger = getJSONLogger('emailservice-server')
-
-# Loads confirmation email template from file
-env = Environment(
-    loader=FileSystemLoader('templates'),
-    autoescape=select_autoescape(['html', 'xml'])
+logger = get_json_logger("emailservice")
+template_environment = Environment(
+    loader=FileSystemLoader(TEMPLATE_DIRECTORY),
+    autoescape=select_autoescape(["html", "xml"]),
+    undefined=StrictUndefined,
 )
-template = env.get_template('confirmation.html')
 
-class BaseEmailService(demo_pb2_grpc.EmailServiceServicer):
-  def Check(self, request, context):
-    return health_pb2.HealthCheckResponse(
-      status=health_pb2.HealthCheckResponse.SERVING)
-  
-  def Watch(self, request, context):
-    return health_pb2.HealthCheckResponse(
-      status=health_pb2.HealthCheckResponse.UNIMPLEMENTED)
 
-class EmailService(BaseEmailService):
-  def __init__(self):
-    raise Exception('cloud mail client not implemented')
-    super().__init__()
+def environment_flag(name, fallback):
+    value = os.getenv(name)
+    if value is None or not value.strip():
+        return fallback
+    return value.strip().lower() in {"1", "true", "yes"}
 
-  @staticmethod
-  def send_email(client, email_address, content):
-    response = client.send_message(
-      sender = client.sender_path(project_id, region, sender_id),
-      envelope_from_authority = '',
-      header_from_authority = '',
-      envelope_from_address = from_address,
-      simple_message = {
-        "from": {
-          "address_spec": from_address,
-        },
-        "to": [{
-          "address_spec": email_address
-        }],
-        "subject": "Your Confirmation Email",
-        "html_body": content
-      }
-    )
-    logger.info("Message sent: {}".format(response.rfc822_message_id))
 
-  def SendOrderConfirmation(self, request, context):
-    email = request.email
+def configured_port():
+    value = os.getenv("PORT", str(DEFAULT_PORT))
+    try:
+        port = int(value)
+    except ValueError as error:
+        raise ValueError("PORT must be an integer between 1 and 65535") from error
+    if not 1 <= port <= 65535:
+        raise ValueError("PORT must be between 1 and 65535")
+    return port
+
+
+def validate_email_address(value):
+    address = value.strip() if isinstance(value, str) else ""
+    parsed = parseaddr(address)[1]
+    if len(address) > 254 or parsed != address or not EMAIL_PATTERN.fullmatch(address):
+        raise ValueError("a valid customer email address is required")
+    return address
+
+
+def validate_confirmation_request(request):
+    email_address = validate_email_address(request.email)
+    if not request.HasField("order"):
+        raise ValueError("order is required")
     order = request.order
-
-    try:
-      confirmation = template.render(order = order)
-    except TemplateError as err:
-      context.set_details("An error occurred when preparing the confirmation mail.")
-      logger.error(err.message)
-      context.set_code(grpc.StatusCode.INTERNAL)
-      return demo_pb2.Empty()
-
-    try:
-      EmailService.send_email(self.client, email, confirmation)
-    except GoogleAPICallError as err:
-      context.set_details("An error occurred when sending the email.")
-      print(err.message)
-      context.set_code(grpc.StatusCode.INTERNAL)
-      return demo_pb2.Empty()
-
-    return demo_pb2.Empty()
-
-class DummyEmailService(BaseEmailService):
-  def SendOrderConfirmation(self, request, context):
-    logger.info('A request to send order confirmation email to {} has been received.'.format(request.email))
-    return demo_pb2.Empty()
-
-class HealthCheck():
-  def Check(self, request, context):
-    return health_pb2.HealthCheckResponse(
-      status=health_pb2.HealthCheckResponse.SERVING)
-
-def start(dummy_mode):
-  server = grpc.server(futures.ThreadPoolExecutor(max_workers=10),)
-  service = None
-  if dummy_mode:
-    service = DummyEmailService()
-  else:
-    raise Exception('non-dummy mode not implemented yet')
-
-  demo_pb2_grpc.add_EmailServiceServicer_to_server(service, server)
-  health_pb2_grpc.add_HealthServicer_to_server(service, server)
-
-  port = os.environ.get('PORT', "8080")
-  logger.info("listening on port: "+port)
-  server.add_insecure_port('[::]:'+port)
-  server.start()
-  try:
-    while True:
-      time.sleep(3600)
-  except KeyboardInterrupt:
-    server.stop(0)
-
-def initStackdriverProfiling():
-  project_id = None
-  try:
-    project_id = os.environ["GCP_PROJECT_ID"]
-  except KeyError:
-    # Environment variable not set
-    pass
-
-  # @TODO: Temporarily removed in https://github.com/GoogleCloudPlatform/microservices-demo/pull/3196
-  # for retry in range(1,4):
-  #   try:
-  #     if project_id:
-  #       googlecloudprofiler.start(service='email_server', service_version='1.0.0', verbose=0, project_id=project_id)
-  #     else:
-  #       googlecloudprofiler.start(service='email_server', service_version='1.0.0', verbose=0)
-  #     logger.info("Successfully started Stackdriver Profiler.")
-  #     return
-  #   except (BaseException) as exc:
-  #     logger.info("Unable to start Stackdriver Profiler Python agent. " + str(exc))
-  #     if (retry < 4):
-  #       logger.info("Sleeping %d to retry initializing Stackdriver Profiler"%(retry*10))
-  #       time.sleep (1)
-  #     else:
-  #       logger.warning("Could not initialize Stackdriver Profiler after retrying, giving up")
-  return
+    if not order.order_id.strip():
+        raise ValueError("order.order_id is required")
+    if not order.shipping_tracking_id.strip():
+        raise ValueError("order.shipping_tracking_id is required")
+    if not order.HasField("shipping_cost"):
+        raise ValueError("order.shipping_cost is required")
+    if not order.HasField("shipping_address"):
+        raise ValueError("order.shipping_address is required")
+    return email_address, order
 
 
-if __name__ == '__main__':
-  logger.info('starting the email service in dummy mode.')
+def format_money(money):
+    nanos = abs(int(money.nanos))
+    cents = nanos // 10_000_000
+    sign = "-" if int(money.units) < 0 or int(money.nanos) < 0 else ""
+    units = abs(int(money.units))
+    return f"{sign}{units}.{cents:02d} {money.currency_code}"
 
-  # Profiler
-  try:
-    if "DISABLE_PROFILER" in os.environ:
-      raise KeyError()
-    else:
-      logger.info("Profiler enabled.")
-      initStackdriverProfiling()
-  except KeyError:
-      logger.info("Profiler disabled.")
 
-  # Tracing
-  try:
-    if os.environ["ENABLE_TRACING"] == "1":
-      otel_endpoint = os.getenv("COLLECTOR_SERVICE_ADDR", "localhost:4317")
-      trace.set_tracer_provider(TracerProvider())
-      trace.get_tracer_provider().add_span_processor(
-        BatchSpanProcessor(
-            OTLPSpanExporter(
-            endpoint = otel_endpoint,
-            insecure = True
-          )
+template_environment.filters["money"] = format_money
+confirmation_template = template_environment.get_template("confirmation.html")
+
+
+def render_confirmation(order):
+    return confirmation_template.render(order=order)
+
+
+class EmailService(demo_pb2_grpc.EmailServiceServicer):
+    """Validates and renders an order confirmation without external delivery."""
+
+    def SendOrderConfirmation(self, request, context):
+        try:
+            email_address, order = validate_confirmation_request(request)
+        except ValueError as error:
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT, str(error))
+
+        try:
+            confirmation = render_confirmation(order)
+        except TemplateError:
+            logger.exception("order confirmation rendering failed")
+            context.abort(grpc.StatusCode.INTERNAL, "order confirmation could not be prepared")
+
+        # Phase 1 simulates delivery. Never log the email address or postal address.
+        logger.info(
+            "simulated order confirmation prepared",
+            extra={
+                "order_id": order.order_id,
+                "recipient_domain": email_address.rsplit("@", 1)[1].lower(),
+                "rendered_bytes": len(confirmation.encode("utf-8")),
+            },
         )
-      )
-    grpc_server_instrumentor = GrpcInstrumentorServer()
-    grpc_server_instrumentor.instrument()
+        return demo_pb2.Empty()
 
-  except (KeyError, DefaultCredentialsError):
-      logger.info("Tracing disabled.")
-  except Exception as e:
-      logger.warn(f"Exception on Cloud Trace setup: {traceback.format_exc()}, tracing disabled.") 
-  
-  start(dummy_mode = True)
+
+def configure_telemetry():
+    if not environment_flag("ENABLE_OTEL", True):
+        logger.info("OpenTelemetry disabled")
+        return None
+
+    resource = Resource.create(
+        {
+            "service.name": "emailservice",
+            "service.namespace": "avos",
+            "service.version": "1.0.0",
+        }
+    )
+    provider = TracerProvider(resource=resource)
+    provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
+    trace.set_tracer_provider(provider)
+    GrpcInstrumentorServer().instrument()
+    logger.info("OpenTelemetry enabled")
+    return provider
+
+
+def create_server():
+    server = grpc.server(
+        futures.ThreadPoolExecutor(max_workers=10),
+        options=(
+            ("grpc.max_receive_message_length", MAX_MESSAGE_BYTES),
+            ("grpc.max_send_message_length", MAX_MESSAGE_BYTES),
+        ),
+    )
+    demo_pb2_grpc.add_EmailServiceServicer_to_server(EmailService(), server)
+
+    health_service = health.HealthServicer()
+    health_service.set("", health_pb2.HealthCheckResponse.SERVING)
+    health_pb2_grpc.add_HealthServicer_to_server(health_service, server)
+    return server, health_service
+
+
+def serve():
+    port = configured_port()
+    tracer_provider = configure_telemetry()
+    server, health_service = create_server()
+    bound_port = server.add_insecure_port(f"[::]:{port}")
+    if bound_port == 0:
+        raise RuntimeError(f"failed to bind gRPC server on port {port}")
+
+    stop_event = threading.Event()
+
+    def request_shutdown(signum, _frame):
+        logger.info("shutdown requested", extra={"signal": signum})
+        stop_event.set()
+
+    signal.signal(signal.SIGINT, request_shutdown)
+    signal.signal(signal.SIGTERM, request_shutdown)
+
+    server.start()
+    logger.info("AVOS Email Service listening", extra={"port": bound_port})
+    stop_event.wait()
+
+    health_service.set("", health_pb2.HealthCheckResponse.NOT_SERVING)
+    server.stop(grace=10).wait()
+    if tracer_provider is not None:
+        tracer_provider.shutdown()
+
+
+if __name__ == "__main__":
+    serve()

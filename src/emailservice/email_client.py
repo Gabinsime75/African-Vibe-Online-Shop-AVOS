@@ -1,39 +1,39 @@
-#!/usr/bin/python
-#
+#!/usr/bin/env python3
 # Copyright 2018 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Modifications copyright 2026 African Vibe Online Shop (AVOS)
+# SPDX-License-Identifier: Apache-2.0
+
+"""Small local gRPC client helper for the AVOS Email Service."""
+
+import os
 
 import grpc
 
 import demo_pb2
 import demo_pb2_grpc
+from logger import get_json_logger
 
-from logger import getJSONLogger
-logger = getJSONLogger('emailservice-client')
+
+logger = get_json_logger("emailservice-client")
+
 
 def send_confirmation_email(email, order):
-  channel = grpc.insecure_channel('[::]:8080')
-  stub = demo_pb2_grpc.EmailServiceStub(channel)
-  try:
-    response = stub.SendOrderConfirmation(demo_pb2.SendOrderConfirmationRequest(
-      email = email,
-      order = order
-    ))
-    logger.info('Request sent.')
-  except grpc.RpcError as err:
-    logger.error(err.details())
-    logger.error('{}, {}'.format(err.code().name, err.code().value))
+    address = os.getenv("EMAIL_SERVICE_ADDR", "localhost:8080")
+    with grpc.insecure_channel(address) as channel:
+        stub = demo_pb2_grpc.EmailServiceStub(channel)
+        try:
+            stub.SendOrderConfirmation(
+                demo_pb2.SendOrderConfirmationRequest(email=email, order=order),
+                timeout=5,
+            )
+            logger.info("confirmation request completed")
+        except grpc.RpcError as error:
+            logger.error(
+                "confirmation request failed",
+                extra={"grpc_code": error.code().name},
+            )
+            raise
 
-if __name__ == '__main__':
-  logger.info('Client for email service.')
+
+if __name__ == "__main__":
+    logger.info("AVOS Email Service client helper loaded")
