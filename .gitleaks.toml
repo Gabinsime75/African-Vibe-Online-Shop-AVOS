@@ -1,0 +1,4 @@
+title = "AVOS Gitleaks configuration"
+
+[extend]
+useDefault = true

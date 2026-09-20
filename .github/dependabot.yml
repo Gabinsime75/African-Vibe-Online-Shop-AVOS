@@ -1,0 +1,52 @@
+version: 2
+
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - github-actions
+    commit-message:
+      prefix: chore
+
+  - package-ecosystem: gomod
+    directory: /src/frontend
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - go
+    commit-message:
+      prefix: chore
+
+  - package-ecosystem: npm
+    directory: /src/currencyservice
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - nodejs
+    commit-message:
+      prefix: chore
+
+  - package-ecosystem: npm
+    directory: /src/paymentservice
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - nodejs
+    commit-message:
+      prefix: chore
+
+  - package-ecosystem: gradle
+    directory: /src/adservice
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - java
+    commit-message:
+      prefix: chore

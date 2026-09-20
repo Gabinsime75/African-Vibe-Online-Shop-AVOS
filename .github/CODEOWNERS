@@ -1,0 +1,17 @@
+# Default repository owner
+* @Gabinsime75
+
+# Application source and shared contracts
+/src/ @Gabinsime75
+/protos/ @Gabinsime75
+
+# Infrastructure and delivery control planes
+/terraform/ @Gabinsime75
+/gitops/ @Gabinsime75
+/.github/ @Gabinsime75
+
+# Architecture, roadmap, ADRs, and validation evidence
+/Docs/ @Gabinsime75
+/README.md @Gabinsime75
+/LICENSE @Gabinsime75
+/NOTICE.txt @Gabinsime75

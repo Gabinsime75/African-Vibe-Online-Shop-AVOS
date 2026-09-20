@@ -1,0 +1,71 @@
+name: Repository Quality
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: repository-quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  markdown:
+    name: Markdown lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Lint Markdown
+        uses: DavidAnson/markdownlint-cli2-action@v20
+        with:
+          globs: |
+            **/*.md
+            #**/.terraform/**
+            #**/node_modules/**
+            #**/.venv/**
+
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out complete history
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Scan repository with Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  hygiene:
+    name: Tracked-file hygiene
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Reject unsafe tracked artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          pattern='(^|/)(\.terraform|\.venv|node_modules|build|dist)/|\.tfstate($|\.)|\.tfplan$|\.pem$|\.key$|\.test$|\.drawio\.(bkp|dtmp)$'
+          matches="$(git ls-files | grep -E "$pattern" || true)"
+
+          if [[ -n "$matches" ]]; then
+            echo "Unsafe generated or sensitive paths are tracked:"
+            echo "$matches"
+            exit 1
+          fi
+
+          echo "Tracked-file hygiene check passed."
