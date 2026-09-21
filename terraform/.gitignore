@@ -82,3 +82,6 @@ Thumbs.db
 *.bak
 *.swp
 *~
+
+# Environment-specific Terraform backend configuration
+**/backend.hcl

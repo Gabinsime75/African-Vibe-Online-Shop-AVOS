@@ -1,9 +1,10 @@
+# =============================================================================
+# AVOS Terraform Bootstrap — Remote State Backend
+#
+# Declares a partial S3 backend. Environment-specific values are supplied from
+# an ignored backend.hcl file during terraform init.
+# =============================================================================
+
 terraform {
-  backend "s3" {
-    bucket       = "cloudhustler-tfstate-dev"
-    key          = "bootstrap/backend/terraform.tfstate"
-    region       = "us-east-2"
-    use_lockfile = true
-    encrypt      = true
-  }
+  backend "s3" {}
 }

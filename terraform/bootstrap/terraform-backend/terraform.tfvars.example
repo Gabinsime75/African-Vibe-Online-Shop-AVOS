@@ -1,0 +1,22 @@
+# =============================================================================
+# AVOS Terraform Bootstrap — Example Input Values
+#
+# Copy this file to terraform.tfvars and replace environment-specific values.
+# Never place credentials or secrets in Terraform variable files.
+# =============================================================================
+
+expected_aws_account_id = "396913735153"
+
+aws_region   = "us-east-2"
+environment  = "dev"
+project_name = "avos"
+owner        = "platform-engineering"
+
+state_noncurrent_version_expiration_days = 365
+kms_deletion_window_in_days               = 30
+
+additional_tags = {
+  CostCenter         = "portfolio"
+  DataClassification = "confidential"
+  Purpose            = "terraform-state"
+}
