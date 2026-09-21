@@ -1,307 +1,235 @@
 # African Vibe Online Shop (AVOS)
 
-## AI-Enhanced GitOps E-Commerce Platform on AWS
+## AI-Enhanced, GitOps-Driven E-Commerce Platform on AWS
 
 ![AWS](https://img.shields.io/badge/AWS-Cloud-orange)
-![Kubernetes](https://img.shields.io/badge/Kubernetes-EKS-blue)
+![Kubernetes](https://img.shields.io/badge/Kubernetes-Amazon_EKS-blue)
 ![Terraform](https://img.shields.io/badge/Terraform-IaC-purple)
 ![Argo CD](https://img.shields.io/badge/GitOps-Argo_CD-red)
 ![gRPC](https://img.shields.io/badge/Service_Communication-gRPC-green)
 ![Prometheus](https://img.shields.io/badge/Monitoring-Prometheus-orange)
-![Bedrock](https://img.shields.io/badge/Generative_AI-Bedrock-blueviolet)
+![Bedrock](https://img.shields.io/badge/Generative_AI-Amazon_Bedrock-blueviolet)
 
-African Vibe Online Shop (AVOS) is a production-oriented e-commerce platform that demonstrates how modern engineering teams can build, secure, deploy, observe, and operate polyglot microservices on Amazon EKS. The project combines Terraform, Kubernetes, gRPC, Istio, GitHub Actions, Argo CD, observability, analytics, and AI-assisted operations in one portfolio-ready AWS architecture.
+African Vibe Online Shop (AVOS) is a production-oriented e-commerce platform for demonstrating how polyglot microservices can be built, secured, delivered, observed, and operated on Amazon Web Services. The approved target architecture combines Amazon EKS, Terraform, Kubernetes, gRPC, Istio, GitHub Actions, Argo CD, observability, analytics, and human-approved AI-assisted operations.
 
-> **Project status:** AVOS is being redesigned from an earlier platform baseline. This document distinguishes capabilities already present in the repository from additions planned for the approved AVOS target architecture.
+> **Implementation status:** Phase 0 is complete. The application source has been rebranded and locally validated, and Phase 1 repository engineering standards are in progress. AWS infrastructure, CI, GitOps, managed data, analytics, and AIOps capabilities shown in the target architecture remain planned until their implementation phases are completed and validated.
 
 ## Table of Contents
 
-- [Problem Statement](#problem-statement)
-- [Solution Overview](#solution-overview)
-- [Architecture Principles](#architecture-principles)
+- [Project Objectives](#project-objectives)
+- [Implementation Status](#implementation-status)
+- [Project Architecture](#project-architecture)
 - [Microservices Architecture](#microservices-architecture)
-- [Identity and Access](#identity-and-access)
-- [Data Platform](#data-platform)
-- [Analytics Platform](#analytics-platform)
-- [Observability](#observability)
-- [AI and AIOps](#ai-and-aiops)
+- [Communication Rules](#communication-rules)
+- [Architecture Principles](#architecture-principles)
+- [Target Platform Components](#target-platform-components)
+- [CI and GitOps Ownership](#ci-and-gitops-ownership)
+- [Observability and Incident Response](#observability-and-incident-response)
+- [Analytics and AI](#analytics-and-ai)
 - [Security and Governance](#security-and-governance)
-- [GitOps and CI/CD](#gitops-and-cicd)
-- [Technology Stack](#technology-stack)
 - [Repository Structure](#repository-structure)
-- [Current Implementation Status](#current-implementation-status)
-- [Senior-Level Architecture Explanations](#senior-level-architecture-explanations)
+- [Local Validation](#local-validation)
+- [Project Documentation](#project-documentation)
+- [License and Attribution](#license-and-attribution)
 
-## Problem Statement
+## Project Objectives
 
-Modern e-commerce teams must release features quickly without sacrificing reliability, security, scalability, or auditability. Common challenges include:
+AVOS is designed to demonstrate the following engineering outcomes:
 
-- **Slow delivery:** Manual build, approval, and deployment steps delay releases.
-- **Kubernetes complexity:** Networking, scaling, security, and workload operations require consistent platform controls.
-- **Limited observability:** Disconnected metrics, logs, and traces make failures difficult to diagnose.
-- **Alert fatigue:** High-volume, low-context alerts slow incident response.
-- **Security exposure:** Long-lived credentials, vulnerable images, excessive permissions, and configuration drift increase risk.
-- **Operational overhead:** Engineers spend too much time correlating telemetry and preparing incident summaries manually.
-- **Fragmented analytics:** Commerce data is difficult to turn into timely customer and business insights.
+- Independently buildable polyglot microservices with strongly typed gRPC contracts.
+- Repeatable AWS infrastructure provisioned through Terraform.
+- Private Amazon EKS workloads with controlled ingress and service-to-service security.
+- Immutable container delivery with separated CI and GitOps responsibilities.
+- Unified metrics, logs, traces, dashboards, alerts, and incident evidence.
+- Managed transactional data, caching, object storage, search, and analytics.
+- Human-approved AIOps recommendations grounded in AVOS telemetry and runbooks.
+- Phase-based implementation with validation, cleanup, cost review, and documented evidence.
 
-## Solution Overview
+## Implementation Status
 
-AVOS addresses these challenges through a layered AWS architecture:
+The repository distinguishes completed work from approved target-state capabilities.
 
-- **Polyglot microservices:** Eleven business services separate customer-facing and transactional responsibilities.
-- **gRPC communication:** Internal services use strongly typed, efficient synchronous contracts.
-- **Amazon EKS:** Kubernetes schedules, scales, and recovers containerized workloads.
-- **Istio service mesh:** Istio provides internal mTLS, traffic policy, service telemetry, and Gateway API support.
-- **GitHub Actions:** Continuous integration tests, scans, builds, and publishes service images.
-- **Argo CD:** GitOps continuously reconciles approved Kubernetes configuration into EKS.
-- **Terraform:** Reusable modules provision AWS infrastructure consistently.
-- **Defense in depth:** Edge, identity, workload, data, and governance controls protect the platform.
-- **Unified observability:** Metrics, logs, and traces provide end-to-end operational visibility.
-- **Analytics and AI:** Streaming data, Amazon Bedrock, SageMaker, and OpenSearch support business intelligence, customer assistance, and AIOps.
+| Capability | Status | Short role |
+|---|---|---|
+| AVOS source rebranding | Implemented and locally validated | Presents the AVOS identity across the storefront and service behavior. |
+| Eleven business services | Implemented and locally validated | Provides the customer, catalog, cart, checkout, and shopping-assistance capabilities. |
+| Load Generator | Implemented and locally validated | Generates controlled customer traffic without being counted as a business service. |
+| Non-root service containers | Implemented and locally validated | Reduces container privilege across all application images. |
+| gRPC service communication | Baseline implemented | Provides strongly typed synchronous calls between business services. |
+| Repository standards | In progress | Establishes ownership, contribution, scanning, formatting, and documentation controls. |
+| Terraform AWS foundation | Planned rebuild | Provisions AVOS infrastructure from reviewed declarative configuration. |
+| Amazon EKS platform | Planned | Runs and scales AVOS workloads in private application subnets. |
+| CI workflows | Planned rebuild | Tests, scans, builds, and publishes immutable images. |
+| GitOps configuration | Planned rebuild | Reconciles approved Kubernetes state through Argo CD. |
+| Managed data services | Planned | Provides Aurora PostgreSQL, ElastiCache for Redis, and Amazon S3. |
+| Observability and incident response | Planned | Correlates metrics, logs, traces, alerts, ownership, and runbooks. |
+| Analytics platform | Planned | Streams and curates business events for governed analysis. |
+| AI-assisted operations | Planned | Produces evidence-based recommendations with human-approved remediation. |
+
+Phase 0 evidence is available in [`Docs/Phase-validation/Phase-0`](Docs/Phase-validation/Phase-0).
 
 ## Project Architecture
-![alt text](https://github.com/Gabinsime75/African-Vibe-Online-Shop-AVOS/blob/main/Docs/Architectures/AVOS-Project-Architecrure-JPEG-latest.jpg)
 
-## Architecture Principles
+The approved target architecture shows the intended developer workflow, AWS environment, networking, Amazon EKS platform, managed data services, observability, governance, analytics, and AIOps capabilities.
 
-| Principle | Role in AVOS |
-|---|---|
-| Git as the source of truth | Stores reviewed application and environment configuration for auditable delivery. |
-| Infrastructure as Code | Makes AWS infrastructure repeatable, reviewable, and recoverable. |
-| Managed services first | Reduces operational work for databases, caching, identity, and analytics. |
-| Private-by-default workloads | Keeps EKS nodes, application pods, and data services outside public subnets. |
-| Zero-trust service communication | Uses service identity, least privilege, and Istio mTLS for east-west traffic. |
-| Independent service delivery | Allows each microservice to be tested, versioned, deployed, and rolled back separately. |
-| Observability by design | Treats metrics, logs, and traces as required platform capabilities. |
-| Cost-aware scalability | Combines HPA and Karpenter so capacity follows application demand. |
+![AVOS target project architecture](Docs/Architectures/avos-project-architecture.jpg)
 
-### Architecture Layers
-
-| Layer | Components | Role |
-|---|---|---|
-| DNS and edge | Route 53, CloudFront, ACM, WAF | Resolves the domain, terminates trusted HTTPS, caches content, and filters malicious requests. |
-| Identity | Amazon Cognito | Authenticates customers and issues tokens used by the application. |
-| Ingress | AWS Load Balancer Controller, ALB, Istio Gateway API | Routes approved external traffic from AWS into the Kubernetes application. |
-| Compute | Amazon EKS, managed node groups, Karpenter, HPA | Runs and scales AVOS containers across private application subnets. |
-| Service communication | gRPC and Istio | Provides typed internal APIs, mTLS, traffic controls, and service-level telemetry. |
-| Data | Aurora PostgreSQL, ElastiCache for Redis, Amazon S3 | Stores durable commerce records, cart state, static assets, and analytical data. |
-| Search and AI | OpenSearch, Amazon Bedrock, Amazon SageMaker | Supports product search, vector retrieval, customer assistance, and AIOps analysis. |
-| Analytics | Kinesis Data Streams, Data Firehose, S3, Glue, Athena | Captures events and makes curated data available for analysis. |
-| Delivery | GitHub Actions, Amazon ECR, Argo CD, Kustomize, Helm | Builds artifacts and reconciles approved releases into EKS. |
-| Observability | Prometheus, Grafana, Alertmanager, Fluent Bit, Loki, OpenTelemetry, X-Ray, Kiali, CloudWatch | Correlates metrics, logs, traces, mesh health, and AWS service events. |
-| Security and governance | IAM, Pod Identity, KMS, Secrets Manager, External Secrets, CloudTrail, Config, GuardDuty, Security Hub, Organizations, SCPs | Enforces access, encryption, secret delivery, detection, audit, and organizational guardrails. |
+> The diagram represents the approved target state. A component is not considered implemented or deployed until its assigned phase passes the documented validation gate.
 
 ## Microservices Architecture
 
-AVOS contains **11 business microservices**, **one testing workload**, and **one cart datastore**.
-![alt text](https://github.com/Gabinsime75/African-Vibe-Online-Shop-AVOS/blob/main/Docs/Architectures/AVOS-microservices-architecture-blueprint.png)
+AVOS contains **11 business microservices**, **one supporting load-testing workload**, and **one cart datastore dependency**.
 
-| Service | Language | Role | Primary dependencies |
+![AVOS microservices architecture](Docs/Architectures/avos-microservices-architecture.png)
+
+| Component | Language | Classification | Short role |
 |---|---|---|---|
-| [`frontend`](src/frontend) | Go | Serves the web experience and coordinates customer requests to backend services. | Catalog, cart, currency, recommendation, shipping, ad, checkout, assistant |
-| [`cartservice`](src/cartservice) | C# | Adds, retrieves, and empties cart items for each customer session. | Redis |
-| [`productcatalogservice`](src/productcatalogservice) | Go | Lists, searches, and retrieves product information. | JSON baseline; managed persistence planned |
-| [`currencyservice`](src/currencyservice) | Node.js | Converts monetary values between supported currencies. | Exchange-rate data |
-| [`paymentservice`](src/paymentservice) | Node.js | Simulates payment authorization and returns a transaction identifier. | Checkout |
-| [`shippingservice`](src/shippingservice) | Go | Calculates shipping costs and creates shipment tracking information. | Checkout and frontend |
-| [`emailservice`](src/emailservice) | Python | Simulates sending order-confirmation messages after checkout. | Checkout |
-| [`checkoutservice`](src/checkoutservice) | Go | Orchestrates cart retrieval, pricing, payment, shipping, cart cleanup, and confirmation. | Cart, catalog, currency, payment, shipping, email |
-| [`recommendationservice`](src/recommendationservice) | Python | Recommends related products from the customer’s current shopping context. | Product catalog |
-| [`adservice`](src/adservice) | Java | Returns contextual advertisements based on request keywords. | Frontend |
-| [`shoppingassistantservice`](src/shoppingassistantservice) | Python | Provides conversational product assistance and AWS-backed retrieval. | Bedrock, OpenSearch, Secrets Manager |
-| [`loadgenerator`](src/loadgenerator) | Python/Locust | Generates synthetic HTTP traffic for resilience, scaling, and performance tests. | Frontend |
+| [`frontend`](src/frontend) | Go | Business service | Serves the customer interface and coordinates backend requests. |
+| [`productcatalogservice`](src/productcatalogservice) | Go | Business service | Lists, searches, and retrieves AVOS product information. |
+| [`cartservice`](src/cartservice) | C# | Business service | Manages cart contents for each customer session. |
+| [`checkoutservice`](src/checkoutservice) | Go | Business service | Orchestrates pricing, payment, shipping, cart cleanup, and confirmation. |
+| [`currencyservice`](src/currencyservice) | Node.js | Business service | Converts monetary values between supported currencies. |
+| [`paymentservice`](src/paymentservice) | Node.js | Business service | Simulates payment authorization and returns a transaction identifier. |
+| [`shippingservice`](src/shippingservice) | Go | Business service | Calculates shipping costs and creates shipment tracking information. |
+| [`emailservice`](src/emailservice) | Python | Business service | Simulates sending order-confirmation messages. |
+| [`recommendationservice`](src/recommendationservice) | Python | Business service | Recommends related products from customer shopping context. |
+| [`adservice`](src/adservice) | Java | Business service | Returns contextual AVOS advertisements from request keywords. |
+| [`shoppingassistantservice`](src/shoppingassistantservice) | Python | Business service | Provides conversational product discovery through AWS-oriented retrieval interfaces. |
+| [`loadgenerator`](src/loadgenerator) | Python/Locust | Testing workload | Generates realistic storefront traffic for performance and resilience validation. |
 
-### Communication Rules
+The interactive dependency map can be downloaded from [`Docs/Architectures/avos-grpc-service-dependency-map.html`](Docs/Architectures/avos-grpc-service-dependency-map.html). GitHub does not execute the embedded interaction directly; download the HTML file and open it locally to use its service-selection controls.
 
-- Customers and the load generator access the frontend over HTTP or HTTPS.
-- Business services communicate synchronously over gRPC.
-- Cart Service communicates with Redis using the Redis protocol.
-- Telemetry is exported through OpenTelemetry, Prometheus scraping, and log forwarding rather than business gRPC calls.
-- Health, readiness, and liveness probes remain operational endpoints and are not business APIs.
-- Timeouts, bounded retries, circuit breaking, and outlier detection will be defined per dependency.
+## Communication Rules
 
-## Identity and Access
+- Customers and the Load Generator reach the frontend through HTTP or HTTPS.
+- Business microservices communicate synchronously through gRPC.
+- Cart Service reaches Redis through the Redis protocol, not gRPC.
+- Telemetry uses OpenTelemetry, Prometheus scraping, and log forwarding rather than business APIs.
+- Health, readiness, and liveness endpoints are operational interfaces, not business APIs.
+- Service-specific deadlines, bounded retries, circuit breaking, and idempotency will be finalized during application-platform implementation.
 
-### Customer Identity
+## Architecture Principles
 
-Amazon Cognito will provide customer registration, sign-in, token issuance, password policies, optional MFA, and account recovery. The frontend will validate customer identity and propagate only the minimum identity context required by backend services.
-
-### Platform Identity
-
-| Control | Role |
+| Principle | Short role |
 |---|---|
-| AWS IAM Identity Center | Provides centralized workforce access to AWS accounts and roles. |
-| EKS access entries | Grants administrators and developers controlled Kubernetes access. |
-| Kubernetes RBAC | Restricts actions inside the cluster by role and namespace. |
-| EKS Pod Identity | Gives workloads short-lived AWS permissions without static access keys. |
-| IAM least privilege | Limits each human, pipeline, and workload to required AWS actions. |
-| Permission boundaries and SCPs | Prevent identities and accounts from exceeding approved guardrails. |
+| Git as the source of truth | Preserves reviewed application and environment configuration with an auditable history. |
+| Infrastructure as Code | Makes AWS infrastructure repeatable, reviewable, and recoverable. |
+| Managed services first | Reduces operational work for databases, caching, identity, analytics, and AI. |
+| Private-by-default workloads | Keeps nodes, pods, and data services outside public subnets. |
+| Least privilege | Limits humans, pipelines, controllers, and workloads to required actions. |
+| Immutable artifacts | Promotes tested container images without rebuilding them between environments. |
+| Independent service delivery | Allows services to be tested, versioned, deployed, and rolled back separately. |
+| Observability by design | Treats metrics, logs, traces, ownership, and runbooks as required capabilities. |
+| Human-approved automation | Prevents probabilistic AI output from making uncontrolled production changes. |
+| Cost-aware scalability | Uses HPA and Karpenter so capacity follows measured application demand. |
 
-## Data Platform
+## Target Platform Components
 
-| Service | Role |
+| Layer | Approved components | Short role |
+|---|---|---|
+| DNS and edge | Route 53, CloudFront, ACM, AWS WAF | Resolves the domain, enforces HTTPS, caches content, and filters malicious traffic. |
+| Customer identity | Amazon Cognito | Authenticates customers and issues application tokens. |
+| Ingress | ALB, AWS Load Balancer Controller, Istio Gateway API | Routes approved external traffic into the Kubernetes application. |
+| Compute | Amazon EKS, managed nodes, Karpenter, HPA | Runs and scales containerized workloads across private subnets. |
+| Service communication | gRPC and Istio | Provides typed APIs, mTLS, traffic policy, and mesh telemetry. |
+| Data | Aurora PostgreSQL, ElastiCache for Redis, Amazon S3 | Stores durable commerce records, cart state, assets, and analytical data. |
+| Search and retrieval | Amazon OpenSearch Service | Supports product search, operational search, and purpose-specific vector retrieval. |
+| Delivery | GitHub Actions, Amazon ECR, Argo CD, Image Updater | Builds immutable artifacts and reconciles approved releases into EKS. |
+| Observability | Prometheus, Grafana, Alertmanager, Fluent Bit, Loki, OpenTelemetry, X-Ray, Kiali, CloudWatch | Correlates workload and AWS operational signals. |
+| Governance | Organizations, SCPs, IAM, KMS, CloudTrail, Config, GuardDuty, Security Hub, Access Analyzer | Applies access, encryption, audit, configuration, and detection controls. |
+
+## CI and GitOps Ownership
+
+GitHub Actions, Argo CD Image Updater, and Argo CD have intentionally separate responsibilities.
+
+| Component | Responsibility |
 |---|---|
-| Amazon Aurora PostgreSQL | Stores durable relational commerce data that requires transactions and referential integrity. |
-| Amazon ElastiCache for Redis | Stores low-latency shopping-cart state with managed availability. |
-| Amazon S3 | Stores product assets, logs, backups, analytical data, and exported reports. |
-| AWS Secrets Manager | Stores database credentials, API secrets, and other application secrets. |
-| AWS KMS | Encrypts EKS secrets, storage, logs, databases, and sensitive AWS resources. |
-| AWS Backup | Applies scheduled backup and retention policies to supported production resources. |
+| GitHub Actions | Tests source, scans dependencies and images, builds containers, and publishes immutable commit-tagged images to Amazon ECR. |
+| Argo CD Image Updater | Detects approved ECR images and writes the selected image reference back to the GitOps repository. |
+| Argo CD | Reconciles the desired state stored in Git into Amazon EKS and reports drift or synchronization failures. |
 
-Data services will be placed in private database subnets and will accept traffic only from approved application security groups or workload identities.
+```mermaid
+flowchart LR
+    DEV[Developer] --> PR[Pull request]
+    PR --> CI[GitHub Actions]
+    CI --> ECR[Amazon ECR]
+    ECR --> IU[Argo CD Image Updater]
+    IU --> GIT[Git image update]
+    GIT --> ARGO[Argo CD]
+    ARGO --> EKS[Amazon EKS]
+```
 
-## Analytics Platform
+GitHub Actions does **not** directly own GitOps image-tag changes. Image Updater is the single approved automated writer for image references.
+
+## Observability and Incident Response
+
+| Signal or function | Approved components | Short role |
+|---|---|---|
+| Metrics | Prometheus, kube-state-metrics, CloudWatch Metrics | Measures application, Kubernetes, node, mesh, and AWS behavior. |
+| Dashboards | Grafana | Visualizes latency, traffic, errors, saturation, capacity, and business health. |
+| Kubernetes logs | Fluent Bit and Loki | Centralizes workload logs for operational troubleshooting. |
+| Distributed traces | OpenTelemetry Collector and AWS X-Ray | Correlates requests across the frontend and gRPC services. |
+| Mesh visibility | Kiali | Displays Istio topology, traffic health, and mTLS state. |
+| Workload alerting | PrometheusRule and Alertmanager | Evaluates, groups, deduplicates, and routes application alerts. |
+| AWS alerting | CloudWatch Alarms, EventBridge, and SNS | Detects AWS service failures and sends severity-based notifications. |
+| Incident response | Slack, email, on-call workflow, dashboards, and runbooks | Gives responders actionable context and approved procedures. |
+
+## Analytics and AI
+
+### Business analytics
 
 ```mermaid
 flowchart LR
     APP[AVOS events] --> KDS[Kinesis Data Streams]
     KDS --> FH[Amazon Data Firehose]
-    FH --> S3[Amazon S3 data lake]
-    S3 --> GLUE[AWS Glue catalog and jobs]
+    FH --> S3[Amazon S3]
+    S3 --> GLUE[AWS Glue]
     GLUE --> ATHENA[Amazon Athena]
+    ATHENA --> QS[Amazon QuickSight]
 ```
 
-| Component | Role |
+| Component | Short role |
 |---|---|
-| Kinesis Data Streams | Ingests customer, order, and operational events in near real time. |
-| Amazon Data Firehose | Buffers, optionally transforms, and delivers event data into S3. |
-| Amazon S3 data lake | Retains raw and curated analytical datasets cost-effectively. |
-| AWS Glue | Catalogs datasets and performs scheduled transformation jobs. |
-| Amazon Athena | Runs serverless SQL queries against curated S3 data. |
-| Amazon QuickSight | Provides business dashboards after the analytical datasets are validated. |
+| Kinesis Data Streams | Ingests customer, order, and operational events without coupling analytics to checkout. |
+| Amazon Data Firehose | Buffers, transforms, and delivers events to approved destinations. |
+| Amazon S3 | Retains raw, curated, failed, and query-result datasets. |
+| AWS Glue | Catalogs schemas and transforms raw data into curated analytical datasets. |
+| Amazon Athena | Runs governed serverless SQL over data stored in S3. |
+| Amazon QuickSight | Presents authorized business dashboards from validated datasets. |
 
-Initial use cases include customer behavior analysis, product demand trends, order reporting, recommendation features, and inventory forecasting. Fraud detection will remain a future use case until real transaction data and governance requirements are defined.
+### Customer-facing AI
 
-## Observability
+Amazon Bedrock, Bedrock Guardrails, OpenSearch vector retrieval, and AWS Secrets Manager form the approved target for grounded shopping-assistant responses.
 
-AVOS uses separate but correlated signals for metrics, logs, traces, mesh behavior, and AWS service health.
+### AI-assisted operations
 
-| Signal | Components | Role |
-|---|---|---|
-| Metrics | Prometheus and kube-state-metrics | Collect application, Kubernetes, node, and service-mesh metrics. |
-| Dashboards | Grafana | Visualizes platform health, capacity, latency, errors, traffic, and saturation. |
-| Alerting | Alertmanager, SNS, and approved collaboration channels | Routes actionable alerts to responsible responders. |
-| Logs | Fluent Bit and Loki | Collects and stores Kubernetes logs for centralized troubleshooting. |
-| Traces | OpenTelemetry Collector and AWS X-Ray | Correlates requests across the frontend and gRPC services. |
-| Mesh visibility | Kiali | Visualizes Istio topology, traffic, errors, and mTLS status. |
-| AWS operations | Amazon CloudWatch | Stores AWS logs, metrics, alarms, and infrastructure events. |
+CloudWatch, Prometheus, Loki, X-Ray, Argo CD, Athena, and optional SageMaker anomaly scores provide incident evidence. EventBridge and Lambda assemble approved context, Bedrock produces a grounded recommendation, a human approves or denies action, and SSM Automation executes only allow-listed runbooks.
 
-## AI and AIOps
-
-AVOS separates customer-facing AI from operational AI so each capability has a clear data boundary and permission model.
-
-### Shopping Assistant
-
-- **Amazon Bedrock:** Generates conversational responses without managing foundation-model infrastructure.
-- **OpenSearch vector retrieval:** Finds relevant catalog context for grounded responses.
-- **AWS Secrets Manager:** Stores any required application secrets securely.
-- **Guardrails for Amazon Bedrock:** Filters disallowed content and constrains model interactions.
-
-### AIOps Workflow
-
-```mermaid
-flowchart LR
-    T[CloudWatch, Prometheus, Loki, X-Ray] --> D[Curated incident context]
-    D --> S[Amazon SageMaker anomaly analysis]
-    S --> B[Amazon Bedrock summary and recommendations]
-    B --> N[SNS and approved collaboration channel]
-    N --> H[Human approval or runbook action]
-```
-
-- **SageMaker:** Detects anomalies or predicts risk from curated operational data when a validated model is available.
-- **Bedrock:** Produces incident summaries, probable causes, and runbook-based recommendations.
-- **EventBridge and Lambda:** Coordinate approved enrichment and remediation workflows.
-- **Human approval:** Protects production from unsafe autonomous changes.
-
-AI-generated guidance remains advisory until a specific remediation is deterministic, tested, least-privileged, reversible, and explicitly approved for automation.
+AI recommendations remain advisory unless a remediation is deterministic, tested, least-privileged, reversible, explicitly approved, and fully auditable.
 
 ## Security and Governance
 
-| Control domain | Components | Role |
+| Control domain | Approved components | Short role |
 |---|---|---|
-| Edge protection | CloudFront, WAF, Shield Standard, ACM | Filters malicious traffic, provides DDoS protections, and enforces HTTPS. |
-| Network security | Private subnets, security groups, network policies | Restricts connectivity between the edge, application, and data tiers. |
-| Workload security | Istio mTLS, RBAC, Pod Identity, Kyverno | Protects service communication and blocks noncompliant workloads. |
-| Secret protection | Secrets Manager and External Secrets Operator | Delivers secrets to workloads without storing secret values in Git. |
-| Supply-chain security | GitHub OIDC, Trivy, ECR scanning, protected environments | Secures build identities and prevents known vulnerable artifacts from promotion. |
-| Encryption | AWS KMS | Encrypts supported data at rest with controlled key policies. |
-| Audit and configuration | CloudTrail and AWS Config | Records API activity and detects configuration drift. |
-| Threat detection | GuardDuty, Security Hub, and IAM Access Analyzer | Detects threats, aggregates findings, and identifies unintended external access. |
-| Organization governance | AWS Organizations and SCPs | Applies account-level guardrails across platform environments. |
-
-## GitOps and CI/CD
-
-GitHub Actions and Argo CD have intentionally different responsibilities.
-
-### Continuous Integration
-
-GitHub Actions validates source changes and produces immutable deployment artifacts.
-
-1. Check out the service source code.
-2. Configure the service language runtime.
-3. Run unit and integration tests.
-4. Scan source code, dependencies, and container images with Trivy.
-5. Authenticate to AWS using GitHub OIDC and short-lived credentials.
-6. Build and push the image to Amazon ECR using an immutable commit tag.
-7. Update the approved GitOps image reference through a reviewed Git change.
-
-### Continuous Delivery
-
-Argo CD watches the GitOps configuration and reconciles it into Amazon EKS.
-
-- **Synchronization:** Applies the declared Kubernetes configuration.
-- **Drift detection:** Identifies differences between Git and the live cluster.
-- **Self-healing:** Restores resources changed outside the approved workflow.
-- **Rollback:** Returns the environment to a previously known-good Git revision.
-- **Auditability:** Preserves the change, approval, image, and deployment history.
-
-```mermaid
-flowchart LR
-    DEV[Developer] --> PR[GitHub pull request]
-    PR --> CI[GitHub Actions]
-    CI --> ECR[Amazon ECR]
-    CI --> GIT[GitOps image update]
-    GIT --> ARGO[Argo CD]
-    ARGO --> EKS[Amazon EKS]
-```
-
-## Technology Stack
-
-| Category | AVOS technology |
-|---|---|
-| Cloud platform | AWS |
-| Frontend | Go templates, HTML, CSS, and JavaScript |
-| Backend languages | Go, C#, Node.js, Python, and Java |
-| Internal communication | gRPC and Protocol Buffers |
-| Container platform | Kubernetes and Amazon EKS |
-| Service mesh | Istio |
-| North-south routing | Route 53, CloudFront, WAF, ALB, AWS Load Balancer Controller, Istio Gateway API |
-| Customer identity | Amazon Cognito |
-| Relational data | Amazon Aurora PostgreSQL |
-| Cart persistence | Amazon ElastiCache for Redis |
-| Object storage and data lake | Amazon S3 |
-| Search and retrieval | Amazon OpenSearch |
-| Analytics | Kinesis Data Streams, Data Firehose, AWS Glue, Athena, and QuickSight |
-| Customer AI and AIOps | Amazon Bedrock and Amazon SageMaker |
-| Container registry | Amazon ECR |
-| Continuous integration | GitHub Actions |
-| GitOps delivery | Argo CD and Kustomize |
-| Package management | Helm |
-| Infrastructure as Code | Terraform |
-| Metrics and dashboards | Prometheus, Grafana, Alertmanager, and CloudWatch |
-| Logs | Fluent Bit and Loki |
-| Tracing | OpenTelemetry Collector and AWS X-Ray |
-| Mesh observability | Kiali |
-| Security | IAM, Pod Identity, KMS, Secrets Manager, Trivy, Kyverno, RBAC, WAF, GuardDuty, Security Hub, Config, and CloudTrail |
+| Edge security | CloudFront, AWS WAF, Shield Standard, ACM | Filters malicious traffic, provides baseline DDoS protection, and enforces HTTPS. |
+| Network security | Private subnets, security groups, VPC Flow Logs, network policies | Restricts and records traffic across platform trust boundaries. |
+| Workload security | Istio mTLS, Kubernetes RBAC, EKS Pod Identity, Kyverno | Protects service traffic and blocks noncompliant workloads. |
+| Secret protection | Secrets Manager and External Secrets Operator | Delivers secrets without storing secret values in Git. |
+| Supply-chain security | GitHub OIDC, Trivy, ECR scanning, protected environments | Uses short-lived credentials and scans release artifacts. |
+| Encryption | AWS KMS | Encrypts supported state, storage, logs, databases, and secrets. |
+| Audit and detection | CloudTrail, Config, GuardDuty, Security Hub, Access Analyzer | Records activity, detects drift and threats, and identifies unintended access. |
+| Organization governance | AWS Organizations and SCPs | Applies account-level guardrails across AVOS environments. |
 
 ## Repository Structure
 
-The current repository is organized around application source code, GitOps configuration, and layered Terraform roots.
-
 ```text
 African-Vibe-Online-Shop-AVOS/
-├── .github/
-│   └── workflows/                  # Reusable and service-specific CI workflows
+├── .github/                    # Repository ownership and future automation controls
+├── Docs/
+│   ├── ADR/                    # Architecture decision records
+│   ├── Architectures/          # Approved diagrams and historical versions
+│   ├── Phase-validation/       # Commands, results, evidence, and sign-off by phase
+│   └── Roadmap/                # Approved implementation sequence and validation gates
 ├── src/
 │   ├── frontend/
 │   ├── adservice/
@@ -315,65 +243,66 @@ African-Vibe-Online-Shop-AVOS/
 │   ├── shippingservice/
 │   ├── shoppingassistantservice/
 │   └── loadgenerator/
-├── gitops/
-│   ├── argocd/                     # Root application, projects, and child Applications
-│   ├── base/                       # Reusable Kubernetes manifests
-│   └── overlays/                   # Environment-specific Kustomize configuration
-├── terraform/
-│   ├── bootstrap/                  # Remote state, locking, and foundational encryption
-│   ├── organization/               # AWS Organizations, OUs, and SCPs
-│   ├── identity/                   # IAM and platform service roles
-│   ├── governance/                 # CloudTrail, Config, GuardDuty, and Security Hub
-│   ├── networking/                 # VPC, subnets, routing, security groups, ALB, ACM, and DNS
-│   ├── security/                   # Regional security controls
-│   ├── container-platform/         # EKS, node groups, add-ons, and cluster access
-│   ├── platform-services/          # Istio, Argo CD, observability, scaling, and operators
-│   ├── edge-security/              # CloudFront, edge WAF, security headers, and public DNS
-│   ├── ci/                         # ECR repositories and GitHub OIDC roles
-│   └── modules/                    # Reusable Terraform modules
-├── docs/                           # Architecture, validation, runbooks, and interview material
-├── scripts/                        # Validation, operations, and automation utilities
+├── gitops/                     # Rebuilt during the approved GitOps phase
+├── terraform/                  # Rebuilt and validated through ordered infrastructure phases
 ├── .gitignore
 ├── LICENSE
 └── README.md
 ```
 
-## Current Implementation Status
+The repository uses CloudHustler only as historical reference material. AVOS resources, workflows, manifests, documentation, and public identity are rebuilt and validated during their assigned phases.
 
-| Capability | Status | Required AVOS work |
-|---|---|---|
-| Eleven business-service source directories | Baseline present | Complete rebranding, API review, tests, and AWS-specific changes. |
-| Load Generator | Baseline present | Keep separate from the business-service count and align test scenarios with AVOS. |
-| gRPC service communication | Baseline present | Standardize contracts, deadlines, retries, health checks, and telemetry. |
-| Terraform AWS foundation | Baseline present | Rename resources, validate modules, and remove obsolete references. |
-| EKS and platform services | Baseline present | Recreate through the approved AVOS roadmap and validation gates. |
-| CloudFront, WAF, and ALB path | Baseline present | Rename domain resources and connect them to the approved Gateway API design. |
-| Istio routing | Modification required | Replace legacy Gateway and VirtualService resources with Gateway API resources. |
-| CI workflows | Partial | Add workflows for ad, email, recommendation, shopping assistant, and load generation. |
-| GitOps manifests | Partial | Add base and environment overlays for the missing services. |
-| Redis | Modification required | Use in-cluster Redis for early development only and ElastiCache for the production target. |
-| Shopping Assistant | Replacement required | Replace Gemini, Google Secret Manager, AlloyDB, and Google embeddings with approved AWS services. |
-| Cognito | Planned | Add customer authentication after identity flows and application changes are designed. |
-| Analytics | Planned | Add the streaming and data-lake pipeline after event contracts are approved. |
-| AIOps | Planned | Add it after observability data is reliable and incident workflows are defined. |
-| Documentation and diagrams | In progress | Produce the approved draw.io-style architecture set and phase-based documents. |
+## Local Validation
 
-## Senior-Level Architecture Explanations
+Phase 0 validated service tests, compilation, and container builds for all 12 source components. Every validated container runs as a non-root user.
 
-1. **We separated build automation from deployment reconciliation.** GitHub Actions tests, scans, and publishes immutable images, while Argo CD deploys only the state declared in Git. This reduces cluster credentials in CI and gives us a clear audit trail and rollback path.
+Common validation entry points include:
 
-2. **We use gRPC internally without forcing it onto external customers.** Browser traffic remains standard HTTPS, while internal services receive strongly typed, efficient contracts. This keeps the public interface simple and makes service-to-service behavior explicit.
+```bash
+# Go services
+go test ./...
+go build ./...
 
-3. **We retained Istio but modernized its ingress API.** Istio still provides mTLS, traffic control, and telemetry, while Gateway API replaces implementation-specific routing resources with portable Kubernetes objects such as GatewayClass, Gateway, and HTTPRoute.
+# Node.js services
+npm ci
+npm run check
+npm test
 
-4. **We distinguish operational search from the logging system.** Loki remains the cost-conscious store for Kubernetes logs, while OpenSearch supports product search, vector retrieval, and selected analytical or AIOps queries. This prevents overlapping platforms from being introduced without a clear purpose.
+# Python services
+python -m unittest discover -p "test_*.py" -v
+python -m compileall -q .
 
-5. **We sequence AI after telemetry and governance.** SageMaker and Bedrock will consume curated operational signals and approved runbooks only after metrics, logs, traces, access controls, and incident procedures are reliable. This makes AI an auditable decision-support layer instead of an unsafe replacement for platform engineering.
+# Java service
+./gradlew clean test --no-daemon
 
-## Next Architecture Deliverables
+# Repository hygiene
+git diff --check
+git diff --cached --check
+```
 
-1. Approve the complete AVOS project architecture and component decisions.
-2. Create the final draw.io-style project, security, observability, GitOps, analytics, and AI architecture diagrams.
-3. Define service APIs, data ownership, failure boundaries, and timeout or retry policies.
-4. Create the detailed phase-by-phase execution roadmap and validation checkpoints.
-5. Finalize the repository structure before implementation begins.
+Service-specific prerequisites and commands remain documented in each service directory.
+
+## Project Documentation
+
+| Document | Short role |
+|---|---|
+| [Implementation roadmap](Docs/Roadmap/AVOS-IMPLEMENTATION-ROADMAP.md) | Defines each phase, dependency, validation gate, deliverable, cleanup activity, and senior explanation. |
+| [Architecture decisions](Docs/ADR/README.md) | Records approved technical decisions and their consequences. |
+| [Phase 0 inventory](Docs/Phase-validation/Phase-0/PHASE-0-BASELINE-INVENTORY.md) | Records the imported baseline without claiming deployed infrastructure. |
+| [Phase 0 validation report](Docs/Phase-validation/Phase-0/PHASE-0-VALIDATION-REPORT.md) | Records source, test, container, and repository-hygiene evidence. |
+| [Project architecture](Docs/Architectures/avos-project-architecture.jpg) | Shows the approved AVOS target platform. |
+| [Microservices architecture](Docs/Architectures/avos-microservices-architecture.png) | Shows service dependencies and communication protocols. |
+
+## License and Attribution
+
+AVOS preserves applicable upstream copyright and license notices inherited with source files. Rebranding the product does not remove third-party licensing obligations.
+
+See [`LICENSE`](LICENSE) for repository licensing information. Individual source files may contain additional notices that must remain intact.
+
+## Phase Progress
+
+| Phase | Status |
+|---|---|
+| Phase 0 — Discovery, baseline, and validation | Complete |
+| Phase 1 — Repository rebrand, hygiene, and engineering standards | In progress |
+| Phase 2 and later implementation phases | Planned |

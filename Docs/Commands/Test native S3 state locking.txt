@@ -1,0 +1,68 @@
+Step 15A — Test native S3 state locking
+	Terminal 1: acquire and hold the lock
+				Create a temporary output: 
+					code lock-test.tf
+				Paste:	output "lock_test" {
+							description = "Temporary output used to validate native S3 state locking."
+							value       = "native-s3-lock-validation"
+						}
+				Format and start an apply:
+					terraform fmt lock-test.tf
+					terraform apply -lock-timeout=30s
+				Terraform should display:
+					Plan: 0 to add, 0 to change, 0 to destroy.
+					Changes to Outputs:
+						+ lock_test = "native-s3-lock-validation"
+						
+						Do you want to perform these actions?
+				Leave Terminal 1 waiting at the approval prompt. Do not enter yes.
+	
+	Terminal 2: prove concurrent access is blocked
+				Open a second Git Bash terminal and enter the same directory:
+				Run:
+					terraform plan -lock-timeout=5s
+				Expected result:
+					Error: Error acquiring the state lock
+						The error should contain lock information such as:
+							Lock ID
+							state path
+							operation
+							user/host
+							Terraform version
+							creation time
+						This failure is the successful test: a second Terraform process cannot modify the same state concurrently.
+						
+	Inspect the S3 lock file
+		While Terminal 1 is still waiting, run in Terminal 2:
+			aws s3api head-object \
+				--bucket "$(terraform output -raw terraform_state_bucket_name)" \
+				--key "$(terraform output -raw bootstrap_state_key).tflock" \
+				--region "$(terraform output -raw aws_region)"
+				
+				The lock object should exist at:	bootstrap/terraform.tfstate.tflock
+	
+	Release the lock safely
+		Return to Terminal 1 and enter: no , Terraform should cancel the apply and release the lock.
+		
+		In Terminal 2, confirm the lock object was removed:
+			aws s3api head-object \
+				--bucket "$(terraform output -raw terraform_state_bucket_name)" \
+				--key "$(terraform output -raw bootstrap_state_key).tflock" \
+				--region "$(terraform output -raw aws_region)"
+				
+			Expected result:	An error occurred (404) when calling the HeadObject operation: Not Found
+			
+		Finally, remove the temporary configuration and verify normal access:
+			rm lock-test.tf
+
+			terraform plan -detailed-exitcode
+			PLAN_EXIT_CODE=$?
+
+			echo "Terraform plan exit code: $PLAN_EXIT_CODE"
+			git status --short
+	
+			Expected result:	No changes. Your infrastructure matches the configuration.
+								Terraform plan exit code: 0
+			
+	This validates native S3 locking through use_lockfile = true.		
+				

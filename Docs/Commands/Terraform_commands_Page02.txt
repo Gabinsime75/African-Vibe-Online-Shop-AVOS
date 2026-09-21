@@ -1,0 +1,50 @@
+git diff --check
+	Checks unstaged changes for whitespace errors, such as trailing spaces.
+	Produces no output when everything passes.
+	
+git diff --cached --check
+	Checks staged changes for whitespace errors before committing.
+	--cached means files already added with git add.
+	
+git ls-files | grep -E \
+'(^|/)(backend\.hcl|terraform\.tfvars|.*\.tfstate.*|tfplan|\.terraform/)' \
+&& echo "FAIL: local Terraform artifacts are tracked" \
+|| echo "PASS: no local Terraform artifacts are tracked"
+	- git ls-files: Lists every file currently tracked by Git.
+	- |: Sends that list to grep.
+	- grep -E: Searches using an extended regular expression.
+	- The pattern searches for tracked Terraform artifacts:
+	- && echo "FAIL...": Prints FAIL if any matching tracked file is found.
+	- || echo "PASS...": Prints PASS if none is found.
+	
+git status --short
+	Shows the repository status in a compact format.
+	Examples:
+		M — modified
+		A — added
+		D — deleted
+		?? — untracked
+
+terraform -chdir=terraform/bootstrap/terraform-backend fmt -check
+	- Runs Terraform from the specified directory.
+	- Checks whether all Terraform files are correctly formatted.
+	- Does not modify the files.
+	- Run terraform fmt without -check to fix formatting.
+	
+terraform -chdir=terraform/bootstrap/terraform-backend init -backend-config=backend.hcl
+	- Initializes that Terraform root.
+	- Downloads required providers and modules.
+	- Configures the remote backend using values from backend.hcl.
+	- Connects Terraform to the AVOS S3 state location.
+	
+terraform -chdir=terraform/bootstrap/terraform-backend validate
+	- Checks whether the Terraform configuration is syntactically and structurally valid.
+	- Does not verify every AWS-side condition or deploy resources.
+	
+terraform -chdir=terraform/bootstrap/terraform-backend plan -detailed-exitcode
+	- Compares the Terraform configuration with the current state and AWS infrastructure.
+	- Generates an execution plan without making changes.
+	- -detailed-exitcode returns:
+		0 — success, no infrastructure changes
+		1 — error
+		2 — success, changes are required	

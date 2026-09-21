@@ -1,0 +1,14 @@
+African Vibe Online Shop (AVOS)
+Copyright 2026 Gabin Sime
+
+This product includes software derived from the Online Boutique
+microservices demonstration project developed by Google LLC and other
+contributors and distributed under the Apache License, Version 2.0.
+
+This product also includes generated protocol-buffer and gRPC code whose
+source files retain their original copyright and license notices.
+
+The African Vibe Online Shop name, branding, documentation, architecture,
+configuration, and project-specific modifications are maintained as part of
+the AVOS project. Product rebranding does not remove or replace copyright,
+license, trademark, or attribution notices that apply to inherited source.

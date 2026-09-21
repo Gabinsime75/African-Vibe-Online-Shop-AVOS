@@ -1,229 +1,84 @@
+# AVOS Terraform Bootstrap
 
-# 🚀 Bootstrap Backend
+## Purpose
 
-The **Bootstrap Backend** is the foundation of the CloudHustler Commerce Platform infrastructure. It provisions the AWS resources required for Terraform to securely manage infrastructure using a remote backend. Once deployed, every Terraform root module shares the same backend for centralized state management, encryption, and state locking.
+This bootstrap creates the protected AWS resources used to store and lock
+Terraform state for AVOS.
 
-## 🎯 Purpose
+The bootstrap is intentionally created with local state first because Terraform
+cannot use an S3 backend before the S3 bucket and KMS key exist.
 
-The bootstrap deployment provisions the foundational AWS resources required before any other Terraform infrastructure can be deployed.
+## Bootstrap sequence
 
-It creates:
+1. Initialize Terraform with local state.
+2. Create the KMS key and alias.
+3. Create and protect the S3 state bucket.
+4. Apply the bootstrap configuration.
+5. Add the partial S3 backend configuration.
+6. Migrate local state into S3.
+7. Validate native S3 state locking and version recovery.
 
-- **AWS KMS Customer-Managed Key**
-  - Encrypts Terraform state stored in Amazon S3.
-  - Supports automatic key rotation.
-  - Provides customer-managed encryption for state files.
+## Environment model
 
-- **Amazon S3 Bucket**
-  - Stores Terraform remote state files.
-  - Versioning enabled.
-  - Server-side encryption enabled.
-  - Public access blocked.
-  - Lifecycle rules supported.
+The initial implementation deploys the AVOS development environment into the
+existing AWS account.
 
-- **Amazon DynamoDB Table**
-  - Provides Terraform state locking.
-  - Uses PAY_PER_REQUEST billing mode.
-  - Supports Point-in-Time Recovery (PITR).
-  - Supports server-side encryption.
+The design supports moving staging and production into separate AWS accounts
+later without changing the state naming model.
 
-## ❓ Why is a Bootstrap Deployment Needed?
+| Setting | Development value |
+|---|---|
+| AWS account | `396913735153` |
+| AWS Region | `us-east-2` |
+| Environment | `dev` |
+| State bucket | `avos-dev-tfstate-396913735153-us-east-2` |
+| State key | `bootstrap/terraform.tfstate` |
+| Locking | Native S3 lock file |
+| Encryption | Customer-managed AWS KMS key |
 
-Terraform cannot use a remote backend until the backend infrastructure already exists.
+The environment and account decision is recorded in
+[`../../Docs/ADR/ADR-001-environment-account-state-model.md`](../../Docs/ADR/ADR-001-environment-account-state-model.md).
 
-This creates a dependency problem:
+## Configuration files
 
-- Terraform requires an Amazon S3 bucket before it can store its state remotely.
-- Terraform requires an Amazon DynamoDB table before it can lock the Terraform state.
-- Terraform cannot create these resources while simultaneously using them as its backend.
+| File | Purpose |
+|---|---|
+| `versions.tf` | Defines compatible Terraform and AWS provider versions. |
+| `providers.tf` | Configures the AWS provider, expected account, Region, and default tags. |
+| `variables.tf` | Declares configurable input values and validation rules. |
+| `locals.tf` | Calculates names, state keys, and common tags. |
+| `data.tf` | Reads the active AWS account identity. |
+| `kms.tf` | Creates the state-encryption KMS key and alias. |
+| `s3.tf` | Creates and protects the versioned S3 state bucket. |
+| `s3-policy.tf` | Denies access to the state bucket over insecure transport. |
+| `outputs.tf` | Exposes backend names, identifiers, and configuration values. |
+| `backend.tf` | Declares a partial S3 backend. |
+| `backend.hcl.example` | Documents the required backend configuration. |
+| `terraform.tfvars.example` | Documents the required input variables. |
+| `.terraform.lock.hcl` | Pins provider selections for reproducible initialization. |
 
-The bootstrap deployment solves this problem by using a temporary local state to provision the backend resources. Once deployed, Terraform migrates the local state to the remote backend, allowing every future deployment to use centralized state management.
+## Security controls
 
-## 🚀 Deployment Steps
+The bootstrap implements:
 
-### 1. Navigate to the Bootstrap Directory
+- Customer-managed KMS encryption
+- Automatic KMS key rotation
+- KMS deletion protection through a delayed deletion window
+- Terraform `prevent_destroy` protection
+- S3 versioning
+- Native S3 state locking
+- S3 Bucket Keys
+- Bucket-owner-enforced object ownership
+- Complete S3 public-access blocking
+- Denial of unencrypted transport
+- Noncurrent state-version retention
+- Account-ID validation
+- Mandatory AVOS resource tags
 
-```
-cd infrastructure/terraform/bootstrap/backend
-```
+## Local files
 
-### 2. Initialize Terraform
+Create local configuration from the committed examples:
 
 ```bash
-terraform init
-```
-
-Terraform downloads the required providers and initializes the working directory.
-
-### 3. Review the Execution Plan
-
-```bash
-terraform plan
-```
-
-Review the resources that Terraform will create before applying any changes.
-
-### 4. Deploy the Bootstrap Infrastructure
-
-```
-terraform apply
-```
-
-Approve the deployment when prompted.
-
-Terraform will provision:
-
-- AWS KMS Key
-- Amazon S3 Bucket
-- Amazon DynamoDB Table
-
-### 5. Verify the Deployment
-
-```
-terraform output
-```
-
-Verify that Terraform returns the expected outputs.
-
-## 🔄 Backend Migration
-
-After the bootstrap deployment completes successfully, every Terraform root module should be configured to use the shared remote backend.
-
-Example `backend.tf`:
-
-```  
-terraform {
-
-  backend "s3" {
-
-    bucket         = "cloudhustler-tfstate-prod"
-    key            = "organization/terraform.tfstate"
-    region         = "us-east-2"
-    dynamodb_table = "cloudhustler-terraform-locks"
-    encrypt        = true
-
-  }
-
-}
-```
-
-Reinitialize Terraform:
-
-```
-terraform init
-```
-
-Terraform will detect the backend configuration change and prompt to migrate the existing local state.
-
-Approve the migration when prompted.
-
-Once completed, Terraform will store all future state files in the remote backend.
-
-## 📤 Outputs
-
-The bootstrap deployment exports the following outputs:
-
-- **kms_key_arn**
-  - ARN of the customer-managed KMS key.
-
-- **s3_bucket_name**
-  - Name of the Terraform remote state bucket.
-
-- **dynamodb_table_name**
-  - Name of the Terraform state locking table.
-
-These outputs can be referenced by automation pipelines or other infrastructure components if needed.
-
-
-
-## 🛠️ Common Troubleshooting
-
-### BucketAlreadyOwnedByYou
-
-**Cause**
-
-The Amazon S3 bucket already exists within your AWS account, but Terraform is not currently managing it.
-
-**Solution**
-
-Import the bucket into the Terraform state.
-
-```
-terraform import module.s3.aws_s3_bucket.s3_bucket <bucket-name>
-```
-
-### Resource Already Exists
-
-**Cause**
-
-The resource was previously created manually or the Terraform state file was lost.
-
-**Solution**
-
-Import the existing resource into Terraform.
-
-```
-terraform import <resource-address> <resource-id>
-```
-
-### State Lock Error
-
-**Cause**
-
-Another Terraform operation currently holds the DynamoDB state lock.
-
-**Solution**
-
-Wait for the current operation to complete or remove the stale lock.
-
-```
-terraform force-unlock <LOCK_ID>
-```
-
-### Access Denied
-
-Verify that the IAM principal has permissions for:
-
-- Amazon S3
-- AWS KMS
-- Amazon DynamoDB
-- AWS IAM
-- AWS STS
-
-## 🌐 Consuming the Backend
-
-Once the bootstrap deployment has been completed, every Terraform root module should use the shared backend.
-
-Examples include:
-
-- Organization
-- Governance
-- Identity
-- Networking
-- Security
-- Observability
-- Environments
-
-Each root module should maintain its own Terraform state file while sharing the same backend infrastructure.
-
-Example state files:
-
-- `organization/terraform.tfstate`
-- `governance/terraform.tfstate`
-- `identity/terraform.tfstate`
-- `networking/terraform.tfstate`
-- `security/terraform.tfstate`
-- `observability/terraform.tfstate`
-- `environments/dev/terraform.tfstate`
-- `environments/staging/terraform.tfstate`
-- `environments/prod/terraform.tfstate`
-
-Benefits include:
-
-- Independent deployments.
-- Centralized state management.
-- Secure state locking.
-- KMS encryption.
-- Versioned state history.
-- Safe collaboration across engineering teams.
-
+cp terraform.tfvars.example terraform.tfvars
+cp backend.hcl.example backend.hcl

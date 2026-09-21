@@ -1,0 +1,82 @@
+Step 15B — Test state recovery
+We’ll perform a safe recovery rehearsal: retrieve a versioned state object without overwriting the active state.
+	
+	1. List available state versions
+		STATE_BUCKET="$(terraform output -raw terraform_state_bucket_name)"
+		STATE_KEY="$(terraform output -raw bootstrap_state_key)"
+		AWS_REGION="$(terraform output -raw aws_region)"
+
+		aws s3api list-object-versions \
+		  --bucket "$STATE_BUCKET" \
+		  --prefix "$STATE_KEY" \
+		  --region "$AWS_REGION" \
+		  --query 'Versions[].{Latest:IsLatest,VersionId:VersionId,Modified:LastModified,Size:Size}' \
+		  --output table
+		
+	You should see at least one version, with one marked True.
+	
+	2. Capture the current version ID
+		STATE_VERSION_ID="$(
+		  aws s3api list-object-versions \
+			--bucket "$STATE_BUCKET" \
+			--prefix "$STATE_KEY" \
+			--region "$AWS_REGION" \
+			--query 'Versions[?IsLatest==`true`].VersionId | [0]' \
+			--output text
+		)"
+
+		printf 'Recovery version: %s\n' "$STATE_VERSION_ID"
+		
+	Confirm it is populated:
+		test -n "$STATE_VERSION_ID" \
+		  && test "$STATE_VERSION_ID" != "None" \
+		  && echo "PASS: recovery version selected" \
+		  || echo "FAIL: no state version selected"
+		  
+	3. Download that version as a recovery copy
+		aws s3api get-object \
+		  --bucket "$STATE_BUCKET" \
+		  --key "$STATE_KEY" \
+		  --version-id "$STATE_VERSION_ID" \
+		  --region "$AWS_REGION" \
+		  terraform.tfstate.recovery-test.json
+	This does not modify the live state. It retrieves a specific immutable S3 version into a local ignored file.
+	
+	4. Validate the recovered state
+		terraform state list \
+		  -state=terraform.tfstate.recovery-test.json
+	Also inspect its Terraform metadata:
+		grep -E '"version"|"terraform_version"|"serial"|"lineage"' \
+		  terraform.tfstate.recovery-test.json \
+		  | head
+		  
+	5. Compare it with the active remote state
+		terraform state pull > terraform.tfstate.current-test.json
+
+		sha256sum \
+		  terraform.tfstate.recovery-test.json \
+		  terraform.tfstate.current-test.json
+		  
+	If both hashes match, the recovered version is identical to the active state. If they differ, 
+	that can simply mean another state version was written between commands; compare their serial 
+	and lineage values before treating it as a problem.
+	
+	6. Clean up the local recovery copies
+	After validation:
+		rm \
+		  terraform.tfstate.recovery-test.json \
+		  terraform.tfstate.current-test.json
+		  
+	Then confirm convergence and repository hygiene:
+		terraform plan -detailed-exitcode
+		PLAN_EXIT_CODE=$?
+
+		echo "Terraform plan exit code: $PLAN_EXIT_CODE"
+
+		git status --short
+		git ls-files | grep -E \
+		'(^|/)(backend\.hcl|terraform\.tfvars|.*\.tfstate.*|tfplan)$' \
+		&& echo "FAIL: local Terraform artifacts are tracked" \
+		|| echo "PASS: no local Terraform artifacts are tracked"
+		
+		Expected plan exit code: 0.
