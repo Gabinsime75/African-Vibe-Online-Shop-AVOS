@@ -1,96 +1,54 @@
-variable "aws_region" {
+# =============================================================================
+# AVOS AWS Organizations — Input Variables
+#
+# Declares the account, organization, Region, ownership, and optional tagging
+# values accepted by this Terraform root.
+# =============================================================================
 
-  description = "AWS region used by the AWS provider."
+variable "aws_region" {
+  description = "AWS Region used by the provider for API operations."
   type        = string
   default     = "us-east-2"
 
+  validation {
+    condition     = can(regex("^[a-z]{2}(-[a-z]+)+-[0-9]+$", var.aws_region))
+    error_message = "aws_region must be a valid AWS Region name such as us-east-2."
+  }
 }
 
+variable "management_account_id" {
+  description = "Twelve-digit AWS account ID authorized to manage the organization."
+  type        = string
 
-variable "create_security_ou" {
-
-  description = "Whether to create the Security Organizational Unit."
-  type        = bool
-  default     = true
-
+  validation {
+    condition     = can(regex("^\\d{12}$", var.management_account_id))
+    error_message = "management_account_id must contain exactly 12 digits."
+  }
 }
 
-variable "create_infrastructure_ou" {
+variable "expected_organization_id" {
+  description = "AWS Organizations ID that this Terraform root is authorized to manage."
+  type        = string
 
-  description = "Whether to create the Infrastructure Organizational Unit."
-  type        = bool
-  default     = true
-
+  validation {
+    condition     = can(regex("^o-[a-z0-9]{10,32}$", var.expected_organization_id))
+    error_message = "expected_organization_id must be a valid ID beginning with o-."
+  }
 }
 
-variable "create_shared_services_ou" {
+variable "owner" {
+  description = "Team responsible for the AVOS organization configuration."
+  type        = string
+  default     = "AVOS Platform Engineering"
 
-  description = "Whether to create the Shared Services Organizational Unit."
-  type        = bool
-  default     = true
-
+  validation {
+    condition     = length(trimspace(var.owner)) > 0
+    error_message = "owner must not be empty."
+  }
 }
 
-variable "create_logging_ou" {
-
-  description = "Whether to create the Logging Organizational Unit."
-  type        = bool
-  default     = true
-
-}
-
-variable "create_nonproduction_ou" {
-
-  description = "Whether to create the NonProduction Organizational Unit."
-  type        = bool
-  default     = true
-
-}
-
-variable "create_development_ou" {
-
-  description = "Whether to create the Development Organizational Unit."
-  type        = bool
-  default     = true
-
-}
-
-variable "create_testing_ou" {
-
-  description = "Whether to create the Testing Organizational Unit."
-  type        = bool
-  default     = true
-
-}
-
-variable "create_staging_ou" {
-
-  description = "Whether to create the Staging Organizational Unit."
-  type        = bool
-  default     = true
-
-}
-
-variable "create_production_ou" {
-
-  description = "Whether to create the Production Organizational Unit."
-  type        = bool
-  default     = true
-
-}
-
-variable "create_suspended_ou" {
-
-  description = "Whether to create the Suspended Organizational Unit."
-  type        = bool
-  default     = true
-
-}
-
-variable "tags" {
-
-  description = "Additional tags to apply to supported AWS resources."
+variable "additional_tags" {
+  description = "Additional tags to merge with the mandatory AVOS tags."
   type        = map(string)
   default     = {}
-
 }

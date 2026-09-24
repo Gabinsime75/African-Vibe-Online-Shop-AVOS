@@ -1,0 +1,94 @@
+Inventory inherited Terraform code
+	This command only lists files:
+		for directory in \
+		  terraform/organization \
+		  terraform/identity \
+		  terraform/governance \
+		  terraform/security
+		do
+		  echo
+		  echo "===== $directory ====="
+
+		  if [ -d "$directory" ]; then
+			git ls-files "$directory" | sort
+		  else
+			echo "Directory not present"
+		  fi
+		done
+
+Confirm the active AWS identity
+	aws sts get-caller-identity \
+	  --query '{
+		Account:Account,
+		Arn:Arn,
+		UserId:UserId
+	  }' \
+	  --output table
+
+verifies which credentials the AWS CLI is using.
+	Set session variables:
+		export AVOS_ACCOUNT_ID="$(
+		  aws sts get-caller-identity \
+			--query Account \
+			--output text
+		)"
+
+		export AVOS_REGION="us-east-2"
+
+		printf 'AWS account: %s\n' "$AVOS_ACCOUNT_ID"
+		printf 'AWS Region:  %s\n' "$AVOS_REGION"
+
+Determine the AWS Organizations state
+	aws organizations describe-organization \
+	  --query 'Organization.{
+		OrganizationId:Id,
+		ManagementAccountId:ManagementAccountId,
+		FeatureSet:FeatureSet,
+		AvailablePolicyTypes:AvailablePolicyTypes
+	  }' \
+	  --output table
+	Possible outcomes:
+		- A table means the account belongs to an AWS Organization.
+		- AWSOrganizationsNotInUseException means it is standalone.
+		- AccessDeniedException can mean the current identity lacks Organizations permissions.
+
+Determine whether this is the management account
+	export MANAGEMENT_ACCOUNT_ID="$(
+	  aws organizations describe-organization \
+		--query 'Organization.ManagementAccountId' \
+		--output text
+	)"
+
+	if [ "$AVOS_ACCOUNT_ID" = "$MANAGEMENT_ACCOUNT_ID" ]; then
+	  echo "RESULT: this is the Organizations management account"
+	else
+	  echo "RESULT: this is an Organizations member account"
+	fi
+
+Inspect the organization root
+	aws organizations list-roots \
+	  --query 'Roots[].{
+		RootId:Id,
+		Name:Name,
+		PolicyTypes:PolicyTypes
+	  }' \
+	  --output json
+
+Check IAM Identity Center
+	aws sso-admin list-instances \
+	  --region "$AVOS_REGION" \
+	  --query 'Instances[].{
+		InstanceArn:InstanceArn,
+		IdentityStoreId:IdentityStoreId,
+		OwnerAccountId:OwnerAccountId,
+		Status:Status
+	  }' \
+	  --output table
+
+Check trusted service integrations
+	aws organizations list-aws-service-access-for-organization \
+	  --query 'EnabledServicePrincipals[].{
+		Service:ServicePrincipal,
+		EnabledDate:DateEnabled
+	  }' \
+	  --output table

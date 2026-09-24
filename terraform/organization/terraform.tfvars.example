@@ -1,0 +1,9 @@
+aws_region              = "us-east-2"
+management_account_id   = "REPLACE_WITH_MANAGEMENT_ACCOUNT_ID"
+expected_organization_id = "REPLACE_WITH_ORGANIZATION_ID"
+owner                   = "AVOS Platform Engineering"
+
+additional_tags = {
+  Repository = "African-Vibe-Online-Shop-AVOS"
+  Phase      = "3"
+}
