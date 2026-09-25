@@ -1,0 +1,5 @@
+identity_center_region              = "us-east-2"
+management_account_id               = "REPLACE_WITH_MANAGEMENT_ACCOUNT_ID"
+expected_identity_center_instance_arn = "REPLACE_WITH_IDENTITY_CENTER_INSTANCE_ARN"
+expected_identity_store_id          = "REPLACE_WITH_IDENTITY_STORE_ID"
+platform_admin_user_name = "REPLACE_WITH_PLATFORM_ADMIN_USERNAME"
