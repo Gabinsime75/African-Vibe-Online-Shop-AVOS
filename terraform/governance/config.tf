@@ -1,75 +1,47 @@
-###############################################################
-# Config Bucket Policy
-###############################################################
+# =============================================================================
+# AVOS Governance — AWS Config
+#
+# Records supported AWS resource configurations and delivers encrypted
+# configuration history and snapshots to the AVOS audit bucket.
+# =============================================================================
 
-data "aws_iam_policy_document" "config_bucket_policy" {
+resource "aws_iam_service_linked_role" "config" {
+  aws_service_name = "config.amazonaws.com"
+  description      = "Allows AWS Config to record AVOS resource configurations"
+}
 
-  statement {
+resource "aws_config_configuration_recorder" "this" {
+  name     = local.config_recorder_name
+  role_arn = aws_iam_service_linked_role.config.arn
 
-    sid    = "AWSConfigBucketPermissionsCheck"
-    effect = "Allow"
-
-    principals {
-      type        = "Service"
-      identifiers = ["config.amazonaws.com"]
-    }
-
-    actions = [
-      "s3:GetBucketAcl"
-    ]
-
-    resources = [
-      module.config_bucket.bucket_arn
-    ]
-  }
-
-  statement {
-
-    sid    = "AWSConfigBucketDelivery"
-    effect = "Allow"
-
-    principals {
-      type        = "Service"
-      identifiers = ["config.amazonaws.com"]
-    }
-
-    actions = [
-      "s3:PutObject"
-    ]
-
-    resources = [
-      "${module.config_bucket.bucket_arn}/AWSLogs/*"
-    ]
-
-    condition {
-      test     = "StringEquals"
-      variable = "s3:x-amz-acl"
-
-      values = [
-        "bucket-owner-full-control"
-      ]
-    }
+  recording_group {
+    all_supported                 = true
+    include_global_resource_types = true
   }
 }
 
+resource "aws_config_delivery_channel" "this" {
+  name = local.config_delivery_channel_name
 
+  s3_bucket_name = aws_s3_bucket.audit_logs.id
+  s3_kms_key_arn = aws_kms_key.audit_logs.arn
 
-###############################################################
-# AWS Config
-###############################################################
+  snapshot_delivery_properties {
+    delivery_frequency = "TwentyFour_Hours"
+  }
 
-module "aws_config" {
+  depends_on = [
+    aws_config_configuration_recorder.this,
+    aws_s3_bucket_policy.audit_logs,
+    aws_s3_bucket_server_side_encryption_configuration.audit_logs
+  ]
+}
 
-  source = "../modules/aws-config"
+resource "aws_config_configuration_recorder_status" "this" {
+  name       = aws_config_configuration_recorder.this.name
+  is_enabled = true
 
-  configuration_recorder_name = local.config_recorder_name
-
-  delivery_channel_name = local.config_delivery_channel_name
-
-  s3_bucket_name = module.config_bucket.bucket_name
-
-  iam_role_arn = module.config_service_role.role_arn
-
-  tags = local.common_tags
-
+  depends_on = [
+    aws_config_delivery_channel.this
+  ]
 }

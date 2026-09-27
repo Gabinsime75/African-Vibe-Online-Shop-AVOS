@@ -92,3 +92,96 @@ Check trusted service integrations
 		EnabledDate:DateEnabled
 	  }' \
 	  --output table
+
+management-account check
+	aws organizations describe-organization \
+	  --query 'Organization.{
+		OrganizationId:Id,
+		ManagementAccountId:MasterAccountId,
+		FeatureSet:FeatureSet
+	  }' \
+	  --output table
+
+	export MANAGEMENT_ACCOUNT_ID="$(
+	aws organizations describe-organization \
+		--query 'Organization.MasterAccountId' \
+		--output text
+	)"
+
+	printf 'Current account:    %s\n' "$AVOS_ACCOUNT_ID"
+	printf 'Management account: %s\n' "$MANAGEMENT_ACCOUNT_ID"
+
+	if [ "$AVOS_ACCOUNT_ID" = "$MANAGEMENT_ACCOUNT_ID" ]; then
+	  echo "RESULT: this is the Organizations management account"
+	else
+	  echo "RESULT: this is an Organizations member account"
+	fi
+
+Inventory the existing organization
+	aws organizations list-accounts \
+	  --query 'Accounts[].{
+		Name:Name,
+		AccountId:Id,
+		State:State,
+		JoinedMethod:JoinedMethod
+	  }' \
+	  --output table
+
+List top-level OUs
+	export AVOS_ROOT_ID="r-2tht"
+
+	aws organizations list-organizational-units-for-parent \
+	  --parent-id "$AVOS_ROOT_ID" \
+	  --query 'OrganizationalUnits[].{
+		Name:Name,
+		Id:Id
+	  }' \
+	  --output table
+
+List all SCPs
+	aws organizations list-policies \
+	  --filter SERVICE_CONTROL_POLICY \
+	  --query 'Policies[].{
+		Name:Name,
+		Id:Id,
+		AWSManaged:AwsManaged,
+		Description:Description
+	  }' \
+	  --output table
+
+List SCPs attached to the root
+	aws organizations list-policies-for-target \
+	  --target-id "$AVOS_ROOT_ID" \
+	  --filter SERVICE_CONTROL_POLICY \
+	  --query 'Policies[].{
+		Name:Name,
+		Id:Id,
+		AWSManaged:AwsManaged
+	  }' \
+	  --output table
+
+Check delegated administration
+	aws organizations list-delegated-administrators \
+	  --query 'DelegatedAdministrators[].{
+		Name:Name,
+		AccountId:Id,
+		State:State
+	  }' \
+	  --output table
+
+Check Identity Center in likely Regions
+	for region in us-east-1 us-east-2 us-west-2
+	do
+	  echo
+	  echo "===== $region ====="
+
+	  aws sso-admin list-instances \
+		--region "$region" \
+		--query 'Instances[].{
+		  InstanceArn:InstanceArn,
+		  IdentityStoreId:IdentityStoreId,
+		  OwnerAccountId:OwnerAccountId,
+		  Status:Status
+		}' \
+		--output table
+	done

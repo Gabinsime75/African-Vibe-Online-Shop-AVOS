@@ -1,116 +1,48 @@
-# ###############################################################
-# # Local Values
-# ###############################################################
-
-# locals {
-
-#   #############################################################
-#   # Naming
-#   #############################################################
-
-#   name_prefix = "${var.project_name}-${var.environment}"
-
-#   #############################################################
-#   # Resource Names
-#   #############################################################
-
-#   governance_kms_alias = "alias/${local.name_prefix}-governance"
-
-#   cloudtrail_name = "${local.name_prefix}-cloudtrail"
-
-#   cloudtrail_bucket = "${local.name_prefix}-cloudtrail"
-
-#   config_bucket = "${local.name_prefix}-config"
-
-#   config_recorder = "${local.name_prefix}-config-recorder"
-
-#   access_analyzer = "${local.name_prefix}-access-analyzer"
-
-#   #############################################################
-#   # Tags
-#   #############################################################
-
-#   common_tags = merge(
-
-#     {
-
-#       Project = var.project_name
-
-#       Environment = var.environment
-
-#       Layer = "governance"
-
-#       Terraform = "true"
-
-#       ManagedBy = "Terraform"
-
-#     },
-
-#     var.tags
-
-#   )
-
-# }
-
-###############################################################
-# Governance Resource Names
-###############################################################
+# =============================================================================
+# AVOS Governance — Derived Names and Common Tags
+#
+# Defines reusable values calculated from variables and AWS account data.
+# Local values reduce duplication and standardize naming across resources.
+# =============================================================================
 
 locals {
-
   name_prefix = "${var.project_name}-${var.environment}"
 
-  governance_kms_key_alias = "alias/${local.name_prefix}-governance"
-
-  cloudtrail_name = "${local.name_prefix}-cloudtrail"
-
-  cloudtrail_bucket_name = "${local.name_prefix}-cloudtrail"
-
-  config_bucket_name = "${local.name_prefix}-config"
-
-  config_recorder_name = "${local.name_prefix}-config-recorder"
-
-  config_delivery_channel_name = "${local.name_prefix}-delivery-channel"
-
-  config_aggregator_name = "${local.name_prefix}-config-aggregator"
-
-  config_aggregator_role_name = "${local.name_prefix}-config-aggregator-role"
-
-  access_analyzer_name = "${local.name_prefix}-access-analyzer"
-
-  common_tags = merge(
-    {
-      Project     = var.project_name
-      Environment = var.environment
-      Layer       = "governance"
-      Terraform   = "true"
-      ManagedBy   = "Terraform"
-    },
-    var.tags
+  audit_log_bucket_name = join(
+    "-",
+    [
+      local.name_prefix,
+      "audit-logs",
+      data.aws_caller_identity.current.account_id,
+      var.aws_region
+    ]
   )
 
+  audit_kms_alias_name         = "alias/${local.name_prefix}-audit-logs"
+  cloudtrail_name              = "${local.name_prefix}-management-events"
+  config_recorder_name         = "${local.name_prefix}-configuration-recorder"
+  config_delivery_channel_name = "${local.name_prefix}-configuration-delivery"
+
+  mandatory_tags = {
+    Project     = upper(var.project_name)
+    Environment = var.environment
+    ManagedBy   = "Terraform"
+    Owner       = var.owner
+    Repository  = var.repository_name
+    Phase       = "3"
+    Component   = "Governance"
+  }
+
+  common_tags = merge(
+    var.additional_tags,
+    local.mandatory_tags
+  )
+
+  cloudtrail_arn = format(
+    "arn:%s:cloudtrail:%s:%s:trail/%s",
+    data.aws_partition.current.partition,
+    var.aws_region,
+    data.aws_caller_identity.current.account_id,
+    local.cloudtrail_name
+  )
 }
-
-# locals {
-
-#   name_prefix = "${var.project_name}-${var.environment}"
-
-#   common_tags = merge(
-#     {
-#       Project     = var.project_name
-#       Environment = var.environment
-#       Layer       = "governance"
-#       Terraform   = "true"
-#       ManagedBy   = "Terraform"
-#     },
-#     var.tags
-#   )
-
-#   cloudtrail_name            = "${local.name_prefix}-cloudtrail"
-#   cloudtrail_bucket_name     = "${local.name_prefix}-cloudtrail"
-#   config_bucket_name         = "${local.name_prefix}-config"
-#   config_recorder_name       = "${local.name_prefix}-config-recorder"
-#   config_aggregator_name     = "${local.name_prefix}-config-aggregator"
-#   config_aggregator_role_name = "${local.name_prefix}-config-aggregator-role"
-#   access_analyzer_name       = "${local.name_prefix}-access-analyzer"
-# }

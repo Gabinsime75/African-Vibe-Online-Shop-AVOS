@@ -1,59 +1,86 @@
-###############################################################
-# CloudTrail Logs Bucket
-###############################################################
+# =============================================================================
+# AVOS Governance — Audit Log S3 Bucket
+#
+# Creates the protected storage destination for CloudTrail and AWS Config
+# evidence.
+# =============================================================================
 
-module "cloudtrail_bucket" {
-
-  source = "../modules/s3"
-
-  bucket_name = local.cloudtrail_bucket_name
-
-  bucket_policy = data.aws_iam_policy_document.cloudtrail_bucket.json
-
+resource "aws_s3_bucket" "audit_logs" {
+  bucket        = local.audit_log_bucket_name
   force_destroy = false
 
-  enable_encryption = true
+  lifecycle {
+    prevent_destroy = true
+  }
 
-  sse_algorithm = "aws:kms"
-
-  kms_key_arn = module.governance_kms.key_arn
-
-  versioning_status = "Enabled"
-
-  enable_public_access_block = true
-
-  object_ownership = "BucketOwnerEnforced"
-
-  tags = local.common_tags
-
+  tags = {
+    Name           = local.audit_log_bucket_name
+    DataClass      = "AuditEvidence"
+    SecurityDomain = "Governance"
+  }
 }
 
-###############################################################
-# AWS Config Bucket
-###############################################################
+resource "aws_s3_bucket_ownership_controls" "audit_logs" {
+  bucket = aws_s3_bucket.audit_logs.id
 
-module "config_bucket" {
+  rule {
+    object_ownership = "BucketOwnerEnforced"
+  }
+}
 
-  source = "../modules/s3"
+resource "aws_s3_bucket_public_access_block" "audit_logs" {
+  bucket = aws_s3_bucket.audit_logs.id
 
-  bucket_name = local.config_bucket_name
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
 
-  bucket_policy = data.aws_iam_policy_document.config_bucket.json
+resource "aws_s3_bucket_versioning" "audit_logs" {
+  bucket = aws_s3_bucket.audit_logs.id
 
-  force_destroy = false
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
 
-  enable_encryption = true
+resource "aws_s3_bucket_server_side_encryption_configuration" "audit_logs" {
+  bucket = aws_s3_bucket.audit_logs.id
 
-  sse_algorithm = "aws:kms"
+  rule {
+    apply_server_side_encryption_by_default {
+      kms_master_key_id = aws_kms_key.audit_logs.arn
+      sse_algorithm     = "aws:kms"
+    }
 
-  kms_key_arn = module.governance_kms.key_arn
+    bucket_key_enabled = true
+  }
+}
 
-  versioning_status = "Enabled"
+resource "aws_s3_bucket_lifecycle_configuration" "audit_logs" {
+  bucket = aws_s3_bucket.audit_logs.id
 
-  enable_public_access_block = true
+  depends_on = [
+    aws_s3_bucket_versioning.audit_logs
+  ]
 
-  object_ownership = "BucketOwnerEnforced"
+  rule {
+    id     = "audit-evidence-retention"
+    status = "Enabled"
 
-  tags = local.common_tags
+    filter {}
 
+    expiration {
+      days = var.audit_log_retention_days
+    }
+
+    noncurrent_version_expiration {
+      noncurrent_days = var.audit_log_retention_days
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
+  }
 }
