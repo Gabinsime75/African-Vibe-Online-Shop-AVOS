@@ -1,79 +1,54 @@
-#############################################
-# AWS Config Service Role
-#############################################
+# =============================================================================
+# AVOS IAM Identity Center — Outputs
+#
+# Exposes identifiers needed for validation, documentation, and future
+# Terraform roots. No credentials or sensitive user data are returned.
+# =============================================================================
 
-output "config_service_role_name" {
-
-  description = "AWS Config service role name."
-
-  value = module.config_service_role.role_name
-
+output "identity_center_region" {
+  description = "AWS Region containing the AVOS IAM Identity Center instance."
+  value       = var.identity_center_region
 }
 
-output "config_service_role_arn" {
-
-  description = "AWS Config service role ARN."
-
-  value = module.config_service_role.role_arn
-
+output "identity_center_instance_arn" {
+  description = "ARN of the AVOS IAM Identity Center organization instance."
+  value       = local.identity_center_instance_arn
 }
 
-#############################################
-# AWS CloudTrail Service Role
-#############################################
-
-output "cloudtrail_service_role_name" {
-
-  description = "CloudTrail service role name."
-
-  value = module.cloudtrail_service_role.role_name
-
+output "identity_store_id" {
+  description = "Identity Store ID associated with the AVOS Identity Center instance."
+  value       = local.identity_store_id
 }
 
-output "cloudtrail_service_role_arn" {
-
-  description = "CloudTrail service role ARN."
-
-  value = module.cloudtrail_service_role.role_arn
-
+output "group_ids" {
+  description = "IAM Identity Center group IDs indexed by their Terraform keys."
+  value = {
+    for key, group in aws_identitystore_group.this :
+    key => group.group_id
+  }
 }
 
-#############################################
-# Amazon GuardDuty Service Role
-#############################################
-
-output "guardduty_service_role_name" {
-
-  description = "GuardDuty service role name."
-
-  value = module.guardduty_service_role.role_name
-
+output "permission_set_arns" {
+  description = "IAM Identity Center permission-set ARNs indexed by their Terraform keys."
+  value = {
+    for key, permission_set in aws_ssoadmin_permission_set.this :
+    key => permission_set.arn
+  }
 }
 
-output "guardduty_service_role_arn" {
-
-  description = "GuardDuty service role ARN."
-
-  value = module.guardduty_service_role.role_arn
-
+output "account_assignment_ids" {
+  description = "Identity Center account-assignment IDs indexed by assignment key."
+  value = {
+    for key, assignment in aws_ssoadmin_account_assignment.this :
+    key => assignment.id
+  }
 }
 
-#############################################
-# AWS Security Hub Service Role
-#############################################
-
-output "securityhub_service_role_name" {
-
-  description = "Security Hub service role name."
-
-  value = module.securityhub_service_role.role_name
-
-}
-
-output "securityhub_service_role_arn" {
-
-  description = "Security Hub service role ARN."
-
-  value = module.securityhub_service_role.role_arn
-
+output "platform_admin_user" {
+  description = "Initial AVOS platform administrator discovered in Identity Center."
+  value = {
+    user_name = data.aws_identitystore_user.platform_admin.user_name
+    user_id   = data.aws_identitystore_user.platform_admin.user_id
+    group_id  = aws_identitystore_group.this["platform_admins"].group_id
+  }
 }

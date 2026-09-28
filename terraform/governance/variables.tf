@@ -1,166 +1,96 @@
-###############################################################
-# General
-###############################################################
+# =============================================================================
+# AVOS Governance — Input Variables
+# =============================================================================
+
+variable "aws_region" {
+  description = "Primary AWS Region for regional AVOS governance resources."
+  type        = string
+  default     = "us-east-2"
+
+  validation {
+    condition     = can(regex("^[a-z]{2}(-gov)?-[a-z]+-[0-9]+$", var.aws_region))
+    error_message = "aws_region must be a valid AWS Region name."
+  }
+}
+
+variable "management_account_id" {
+  description = "AWS Organizations management account in which this root is allowed to operate."
+  type        = string
+
+  validation {
+    condition     = can(regex("^[0-9]{12}$", var.management_account_id))
+    error_message = "management_account_id must contain exactly 12 digits."
+  }
+}
+
+variable "organization_id" {
+  description = "Expected AWS Organizations organization ID."
+  type        = string
+
+  validation {
+    condition     = can(regex("^o-[a-z0-9]{10,32}$", var.organization_id))
+    error_message = "organization_id must use the AWS Organizations o-xxxxxxxxxx format."
+  }
+}
 
 variable "project_name" {
-  description = "Project name."
+  description = "Short project identifier used in names and tags."
   type        = string
-  default     = "cloudhustler-commerce-platform"
+  default     = "avos"
+
+  validation {
+    condition     = can(regex("^[a-z][a-z0-9-]{1,19}$", var.project_name))
+    error_message = "project_name must start with a lowercase letter and contain only lowercase letters, digits, and hyphens."
+  }
 }
 
 variable "environment" {
-  description = "Deployment environment."
+  description = "AVOS environment represented by this governance deployment."
   type        = string
   default     = "dev"
+
+  validation {
+    condition = contains(
+      ["dev", "staging", "prod"],
+      var.environment
+    )
+    error_message = "environment must be dev, staging, or prod."
+  }
 }
 
-variable "aws_region" {
-  description = "AWS region."
+variable "owner" {
+  description = "Team responsible for the governance infrastructure."
   type        = string
-  default     = "us-east-2"
+  default     = "AVOS Platform Engineering"
+
+  validation {
+    condition     = length(trimspace(var.owner)) > 0
+    error_message = "owner must not be empty."
+  }
 }
 
-variable "tags" {
-  description = "Common resource tags."
+variable "repository_name" {
+  description = "Source repository associated with these resources."
+  type        = string
+  default     = "African-Vibe-Online-Shop-AVOS"
+}
+
+variable "additional_tags" {
+  description = "Additional tags merged into the mandatory AVOS tag set."
   type        = map(string)
   default     = {}
 }
 
-#############################################
-# AWS
-#############################################
+variable "audit_log_retention_days" {
+  description = "Number of days audit evidence is retained before expiration."
+  type        = number
+  default     = 2555
 
-# variable "aws_region" {
-
-#   description = "AWS Region."
-
-#   type = string
-
-# }
-
-#############################################
-# CloudTrail
-#############################################
-
-variable "cloudtrail_name" {
-
-  description = "CloudTrail name."
-
-  type = string
-
+  validation {
+    condition = (
+      var.audit_log_retention_days >= 365 &&
+      var.audit_log_retention_days <= 3650
+    )
+    error_message = "audit_log_retention_days must be between 365 and 3650 days."
+  }
 }
-
-variable "cloudtrail_bucket_name" {
-
-  description = "CloudTrail S3 bucket."
-
-  type = string
-
-}
-
-variable "cloudtrail_role_name" {
-
-  description = "CloudTrail service role."
-
-  type = string
-
-}
-
-#############################################
-# AWS Config
-#############################################
-
-variable "config_bucket_name" {
-
-  description = "AWS Config S3 bucket."
-
-  type = string
-
-}
-
-variable "config_role_name" {
-
-  description = "AWS Config service role."
-
-  type = string
-
-}
-
-# #############################################
-# # KMS
-# #############################################
-
-# variable "kms_key_arn" {
-
-#   description = "KMS Key ARN."
-
-#   type = string
-
-# }
-
-#############################################
-# GuardDuty
-#############################################
-
-variable "guardduty_role_name" {
-
-  description = "GuardDuty service role."
-
-  type = string
-
-}
-
-#############################################
-# Security Hub
-#############################################
-
-variable "securityhub_role_name" {
-
-  description = "Security Hub service role."
-
-  type = string
-
-}
-
-#############################################
-# Access Analyzer
-#############################################
-
-variable "access_analyzer_name" {
-
-  description = "IAM Access Analyzer name."
-
-  type = string
-
-}
-
-#############################################
-# Config Aggregator
-#############################################
-
-variable "config_aggregator_name" {
-
-  description = "Config Aggregator name."
-
-  type = string
-
-}
-
-#############################################
-# Tags
-#############################################
-
-# variable "tags" {
-
-#   description = "Common resource tags."
-
-#   type = map(string)
-
-# }
-
-variable "enable_config_delivery_policy" {
-  description = "Attach the AWS Config delivery bucket policy."
-  type        = bool
-  default     = false
-}
-

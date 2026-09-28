@@ -1,302 +1,68 @@
-````markdown
-# 🔐 Identity
+# AVOS IAM Identity Center
 
-The **Identity** deployment establishes the identity and access management foundation for the CloudHustler Commerce Platform. It provisions reusable IAM roles, policies, instance profiles, permission boundaries, and service roles that enable AWS services, applications, and infrastructure to securely interact while enforcing the principle of least privilege.
+This Terraform root manages the workforce authorization model for the African
+Vibe Online Shop (AVOS).
 
+It uses the AWS IAM Identity Center organization instance in `us-east-2` and
+stores Terraform state in the encrypted AVOS S3 backend.
 
-## 🎯 Purpose
+## Scope
 
-The Identity deployment provisions the AWS Identity and Access Management (IAM) resources required to securely operate the CloudHustler Commerce Platform.
+This root manages:
 
-It creates:
+- IAM Identity Center groups
+- Permission sets
+- AWS-managed policy attachments
+- AWS account assignments
+- Membership of the initial platform administrator
+- Validation of the expected AWS account and Identity Center instance
 
-- **IAM Roles**
-  - Service roles.
-  - Application roles.
-  - Infrastructure roles.
-  - Cross-service roles.
+Workforce authentication is provided by IAM Identity Center. Long-lived IAM
+access keys are not the preferred administrative access method.
 
-- **IAM Policies**
-  - Customer-managed IAM policies.
-  - Least-privilege permissions.
-  - Reusable policy documents.
+## Access model
 
-- **IAM Instance Profiles**
-  - EC2 instance profiles.
-  - Secure role attachment for EC2 instances.
+| Group | Permission set | AWS policy | Session | Account assignment |
+|---|---|---|---:|---|
+| `AVOS-Platform-Admins` | `AVOS-AdministratorAccess` | `AdministratorAccess` | 1 hour | Management account |
+| `AVOS-Security-Auditors` | `AVOS-SecurityAudit` | `SecurityAudit` | 1 hour | Management account |
+| `AVOS-Developers` | `AVOS-DeveloperAccess` | `PowerUserAccess` | 4 hours | Deferred |
+| `AVOS-ReadOnly` | `AVOS-ReadOnlyAccess` | `ReadOnlyAccess` | 4 hours | Deferred |
 
-- **Permission Boundaries**
-  - Maximum permission limits.
-  - Delegated administration.
-  - Enterprise governance.
+Developer and read-only assignments are intentionally deferred until dedicated
+AVOS workload accounts exist. They must not be assigned to the unrelated
+`DCT-PRODUCTION` account.
 
-- **AWS Service Roles**
-  - AWS Config.
-  - AWS CloudTrail.
-  - Amazon GuardDuty.
-  - AWS Security Hub.
-  - Future AWS services.
+## Initial administrator
 
+The initial administrator user is created through the IAM Identity Center
+workforce-user onboarding process and discovered by Terraform using its
+username.
 
-## ✨ Features
+Terraform manages the user's membership in `AVOS-Platform-Admins`; it does not
+manage the user's password, MFA device, or recovery factors.
 
-- Centralized identity management.
-- Reusable IAM modules.
-- Least-privilege access control.
-- Service role provisioning.
-- Permission boundary support.
-- EC2 instance profile support.
-- Customer-managed IAM policies.
-- Environment-agnostic design.
-- Enterprise-ready security.
+## Terraform files
 
-## 🏗️ Resources Created
+| File | Purpose |
+|---|---|
+| `versions.tf` | Declares Terraform and AWS provider requirements |
+| `backend.tf` | Declares the S3 remote backend |
+| `providers.tf` | Configures the AWS provider and default tags |
+| `variables.tf` | Defines configurable inputs and validations |
+| `locals.tf` | Defines groups, permission sets, assignments, and common tags |
+| `data.tf` | Discovers and validates the AWS account and Identity Center instance |
+| `groups.tf` | Creates Identity Center groups |
+| `users.tf` | Discovers the initial platform administrator |
+| `group-memberships.tf` | Manages administrator group membership |
+| `permission-sets.tf` | Creates permission sets |
+| `managed-policy-attachments.tf` | Attaches AWS-managed policies |
+| `account-assignments.tf` | Assigns groups and permission sets to AWS accounts |
+| `outputs.tf` | Exposes non-sensitive identifiers for validation |
 
-The Identity deployment provisions reusable IAM resources including:
+## Initialize
 
-- IAM Roles
-- IAM Policies
-- IAM Role Policy Attachments
-- IAM Instance Profiles
-- Permission Boundaries
-- AWS Service Roles
-
-These resources provide the authentication and authorization layer used throughout the platform.
-
-## 📂 Directory Structure
-
-```text
-identity/
-├── versions.tf
-├── providers.tf
-├── backend.tf
-├── variables.tf
-├── locals.tf
-├── iam.tf
-├── service_roles.tf
-├── outputs.tf
-├── terraform.tfvars
-└── README.md
-```
-
-
-## 🏛️ Identity Architecture
-
-```text
-Identity
-│
-├── IAM Roles
-│
-├── IAM Policies
-│
-├── Permission Boundaries
-│
-├── Instance Profiles
-│
-└── AWS Service Roles
-    ├── AWS Config
-    ├── AWS CloudTrail
-    ├── Amazon GuardDuty
-    └── AWS Security Hub
-```
-
-
-## 🚀 Deployment Steps
-
-### 1. Navigate to the Identity Directory
+Create the operational backend configuration from the example:
 
 ```bash
-cd infrastructure/terraform/identity
-```
-
-### 2. Initialize Terraform
-
-```bash
-terraform init
-```
-
-Terraform downloads the required providers and configures the remote backend.
-
-### 3. Review the Deployment Plan
-
-```bash
-terraform plan
-```
-
-Review the IAM resources before deployment.
-
-### 4. Deploy the Identity Infrastructure
-
-```bash
-terraform apply
-```
-
-Approve the deployment when prompted.
-
-Terraform provisions:
-
-- IAM Roles
-- IAM Policies
-- IAM Instance Profiles
-- Permission Boundaries
-- AWS Service Roles
-
-### 5. Verify the Deployment
-
-```bash
-terraform output
-```
-
-Verify that all IAM resources were created successfully.
-
-
-## 📦 Modules Used
-
-The Identity deployment consumes the following reusable Terraform modules:
-
-- IAM Module
-- Config Service Role Module
-- CloudTrail Service Role Module
-- GuardDuty Service Role Module
-- Security Hub Service Role Module
-
-These modules provide standardized IAM resources that can be reused throughout the platform.
-
-
-## 📥 Inputs
-
-| Name | Description |
-|------|-------------|
-| `environment` | Deployment environment |
-| `project_name` | Project name |
-| `permission_boundary_arn` | Permission boundary ARN |
-| `create_instance_profiles` | Enable EC2 instance profiles |
-| `service_roles` | Service role configuration |
-| `tags` | Resource tags |
-
-
-## 📤 Outputs
-
-The deployment exports the following outputs:
-
-- **iam_role_arns**
-  - ARNs of all IAM roles.
-
-- **iam_policy_arns**
-  - ARNs of all customer-managed IAM policies.
-
-- **instance_profile_arns**
-  - ARNs of all EC2 instance profiles.
-
-- **service_role_arns**
-  - ARNs of all AWS service roles.
-
-
-## 🔒 Security Best Practices
-
-The Identity deployment follows AWS security best practices by:
-
-- Enforcing the Principle of Least Privilege.
-- Using IAM Roles instead of long-lived IAM Users.
-- Creating customer-managed IAM policies.
-- Separating trust policies from permission policies.
-- Supporting permission boundaries.
-- Applying consistent resource tagging.
-- Avoiding wildcard permissions whenever possible.
-- Creating dedicated roles for AWS services.
-- Reusing standardized IAM modules across the platform.
-
-
-## 🛠️ Common Troubleshooting
-
-### IAM Role Already Exists
-
-**Cause**
-
-An IAM role with the same name already exists.
-
-**Solution**
-
-Import the existing role into Terraform or rename the role.
-
-
-### IAM Policy Already Exists
-
-**Cause**
-
-A customer-managed policy with the same name already exists.
-
-**Solution**
-
-Import the existing policy into Terraform or use a unique policy name.
-
-
-### Permission Boundary Not Found
-
-**Cause**
-
-The specified permission boundary ARN does not exist.
-
-**Solution**
-
-Verify the ARN or deploy the permission boundary before referencing it.
-
-
-### Access Denied
-
-Verify that the IAM principal has permissions for:
-
-- AWS IAM
-- AWS STS
-
-
-## 🌐 Integration with the Platform
-
-The Identity deployment provides the authentication and authorization layer for every CloudHustler Commerce Platform component.
-
-Future deployments that consume these IAM resources include:
-
-- Networking
-- Security
-- Observability
-- Amazon EKS
-- Amazon ECS
-- AWS Lambda
-- Amazon RDS
-- Amazon ElastiCache
-- Amazon OpenSearch
-- GitHub Actions
-- CI/CD Pipelines
-
-Every infrastructure component inherits standardized identity management through reusable IAM modules.
-
-
-## 🔒 Best Practices
-
-- Create one IAM role per workload.
-- Use customer-managed IAM policies.
-- Separate trust policies from permission policies.
-- Apply permission boundaries where appropriate.
-- Prefer IAM Roles over IAM Users.
-- Rotate credentials automatically whenever possible.
-- Avoid wildcard permissions unless absolutely necessary.
-- Tag IAM resources consistently.
-- Reuse IAM modules across every deployment.
-- Manage all IAM resources through Terraform.
-
-
-## 🎯 Next Steps
-
-With the Identity layer deployed, the CloudHustler Commerce Platform has a secure and standardized identity foundation for every AWS workload.
-
-The recommended next deployments are:
-
-1. Networking
-2. Security
-3. Observability
-4. Environments
-5. Platform Services
-6. Application Infrastructure
-
-The Identity deployment provides the authentication and authorization foundation that every future infrastructure and application component will rely upon.
-````
+cp backend.hcl.example backend.hcl
