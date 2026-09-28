@@ -1,85 +1,96 @@
-variable "project_name" {
-  description = "Name of the project."
+# =============================================================================
+# AVOS Security — Input Variables
+# =============================================================================
+
+variable "aws_region" {
+  description = "AWS Region in which regional AVOS security services are enabled."
   type        = string
+  default     = "us-east-2"
+
+  validation {
+    condition     = can(regex("^[a-z]{2}(-gov)?-[a-z]+-[0-9]+$", var.aws_region))
+    error_message = "aws_region must be a valid AWS Region name."
+  }
+}
+
+variable "management_account_id" {
+  description = "AWS Organizations management account in which this root may operate."
+  type        = string
+
+  validation {
+    condition     = can(regex("^[0-9]{12}$", var.management_account_id))
+    error_message = "management_account_id must contain exactly 12 digits."
+  }
+}
+
+variable "organization_id" {
+  description = "Expected AWS Organizations organization ID."
+  type        = string
+
+  validation {
+    condition     = can(regex("^o-[a-z0-9]{10,32}$", var.organization_id))
+    error_message = "organization_id must use the AWS Organizations o-xxxxxxxxxx format."
+  }
+}
+
+variable "project_name" {
+  description = "Short project identifier used in resource names and tags."
+  type        = string
+  default     = "avos"
+
+  validation {
+    condition     = can(regex("^[a-z][a-z0-9-]{1,19}$", var.project_name))
+    error_message = "project_name must start with a lowercase letter and contain only lowercase letters, digits, and hyphens."
+  }
 }
 
 variable "environment" {
-  description = "Deployment environment."
+  description = "AVOS environment protected by this deployment."
   type        = string
+  default     = "dev"
+
+  validation {
+    condition = contains(
+      ["dev", "staging", "prod"],
+      var.environment
+    )
+    error_message = "environment must be dev, staging, or prod."
+  }
 }
 
-variable "aws_region" {
-  description = "AWS region where security resources are deployed."
+variable "owner" {
+  description = "Team responsible for the AVOS security services."
   type        = string
+  default     = "AVOS Platform Engineering"
+
+  validation {
+    condition     = length(trimspace(var.owner)) > 0
+    error_message = "owner must not be empty."
+  }
 }
 
-variable "alb_arn" {
-  description = "ARN of the public Application Load Balancer to associate with AWS WAF."
+variable "repository_name" {
+  description = "Repository associated with these security resources."
   type        = string
+  default     = "African-Vibe-Online-Shop-AVOS"
 }
 
-variable "waf_log_retention_in_days" {
-  description = "Number of days to retain WAF logs."
-  type        = number
-  default     = 90
+variable "guardduty_finding_publishing_frequency" {
+  description = "Frequency at which GuardDuty publishes updated findings."
+  type        = string
+  default     = "FIFTEEN_MINUTES"
+
+  validation {
+    condition = contains(
+      ["FIFTEEN_MINUTES", "ONE_HOUR", "SIX_HOURS"],
+      var.guardduty_finding_publishing_frequency
+    )
+    error_message = "GuardDuty publishing frequency must be FIFTEEN_MINUTES, ONE_HOUR, or SIX_HOURS."
+  }
 }
 
-variable "tags" {
-  description = "Additional tags to apply to all resources."
+variable "additional_tags" {
+  description = "Additional tags merged into the mandatory AVOS tag set."
   type        = map(string)
   default     = {}
-}
-
-variable "waf_rate_limit" {
-  description = "Maximum requests allowed from a single IP address in a 5-minute period."
-  type        = number
-  default     = 2000
-}
-
-variable "waf_allow_ip_addresses" {
-  description = "IPv4 CIDR addresses explicitly allowed by WAF."
-  type        = list(string)
-  default     = []
-}
-
-variable "waf_block_ip_addresses" {
-  description = "IPv4 CIDR addresses explicitly blocked by WAF."
-  type        = list(string)
-  default     = []
-}
-
-variable "enable_waf_blocked_requests_alarm" {
-  description = "Whether to create a CloudWatch alarm for blocked WAF requests."
-  type        = bool
-  default     = true
-}
-
-variable "waf_blocked_requests_alarm_threshold" {
-  description = "Blocked request threshold for the WAF alarm."
-  type        = number
-  default     = 100
-}
-
-variable "waf_blocked_requests_alarm_period" {
-  description = "CloudWatch alarm period in seconds."
-  type        = number
-  default     = 300
-}
-
-variable "waf_blocked_requests_alarm_evaluation_periods" {
-  description = "Number of evaluation periods for the WAF blocked request alarm."
-  type        = number
-  default     = 1
-}
-
-variable "waf_alarm_actions" {
-  description = "SNS topic ARNs or other actions for WAF alarm state."
-  type        = list(string)
-  default     = []
-}
-
-variable "waf_ok_actions" {
-  description = "SNS topic ARNs or other actions for WAF OK state."
-  type        = list(string)
-  default     = []
 }

@@ -1,0 +1,10 @@
+aws_region            = "us-east-2"
+management_account_id = "REPLACE_WITH_MANAGEMENT_ACCOUNT_ID"
+organization_id       = "REPLACE_WITH_ORGANIZATION_ID"
+owner                 = "AVOS Platform Engineering"
+
+guardduty_finding_publishing_frequency = "FIFTEEN_MINUTES"
+
+additional_tags = {
+  CostCenter = "AVOS"
+}
