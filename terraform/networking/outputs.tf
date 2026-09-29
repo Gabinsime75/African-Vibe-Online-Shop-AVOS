@@ -1,188 +1,232 @@
-###############################################################
-# VPC Outputs
-###############################################################
+# =============================================================================
+# AVOS Network Foundation — Outputs
+#
+# Exposes stable networking identifiers for downstream Terraform roots such as
+# the container platform, databases, platform services, and observability.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# VPC
+# -----------------------------------------------------------------------------
 
 output "vpc_id" {
-  description = "ID of the VPC created by the networking root."
-  value       = module.vpc.vpc_id
+  description = "ID of the AVOS VPC."
+  value       = aws_vpc.this.id
+}
+
+output "vpc_arn" {
+  description = "ARN of the AVOS VPC."
+  value       = aws_vpc.this.arn
 }
 
 output "vpc_cidr_block" {
-  description = "CIDR block assigned to the VPC."
-  value       = module.vpc.vpc_cidr_block
+  description = "Primary IPv4 CIDR block assigned to the AVOS VPC."
+  value       = aws_vpc.this.cidr_block
+}
+
+output "availability_zones" {
+  description = "Availability Zones used by the AVOS network foundation."
+  value       = var.availability_zones
+}
+
+# -----------------------------------------------------------------------------
+# Public subnets
+# -----------------------------------------------------------------------------
+
+output "public_subnet_ids_by_az" {
+  description = "Map of Availability Zone names to public subnet IDs."
+  value = {
+    for availability_zone, subnet in aws_subnet.public :
+    availability_zone => subnet.id
+  }
 }
 
 output "public_subnet_ids" {
-  description = "IDs of the public subnets."
-  value       = module.vpc.public_subnet_ids
+  description = "Ordered list of public subnet IDs."
+  value = [
+    for availability_zone in var.availability_zones :
+    aws_subnet.public[availability_zone].id
+  ]
 }
 
-output "private_app_subnet_ids" {
-  description = "IDs of the private application subnets."
-  value       = module.vpc.private_app_subnet_ids
+output "public_subnet_cidr_blocks" {
+  description = "Map of Availability Zone names to public subnet CIDR blocks."
+  value = {
+    for availability_zone, subnet in aws_subnet.public :
+    availability_zone => subnet.cidr_block
+  }
 }
 
-output "private_db_subnet_ids" {
-  description = "IDs of the private database subnets."
-  value       = module.vpc.private_db_subnet_ids
+# -----------------------------------------------------------------------------
+# Private application subnets
+# -----------------------------------------------------------------------------
+
+output "private_application_subnet_ids_by_az" {
+  description = "Map of Availability Zone names to private application subnet IDs."
+  value = {
+    for availability_zone, subnet in aws_subnet.private_application :
+    availability_zone => subnet.id
+  }
 }
+
+output "private_application_subnet_ids" {
+  description = "Ordered list of private application subnet IDs."
+  value = [
+    for availability_zone in var.availability_zones :
+    aws_subnet.private_application[availability_zone].id
+  ]
+}
+
+output "private_application_subnet_cidr_blocks" {
+  description = "Map of Availability Zone names to private application subnet CIDR blocks."
+  value = {
+    for availability_zone, subnet in aws_subnet.private_application :
+    availability_zone => subnet.cidr_block
+  }
+}
+
+# -----------------------------------------------------------------------------
+# Private data subnets
+# -----------------------------------------------------------------------------
+
+output "private_data_subnet_ids_by_az" {
+  description = "Map of Availability Zone names to private data subnet IDs."
+  value = {
+    for availability_zone, subnet in aws_subnet.private_data :
+    availability_zone => subnet.id
+  }
+}
+
+output "private_data_subnet_ids" {
+  description = "Ordered list of private data subnet IDs."
+  value = [
+    for availability_zone in var.availability_zones :
+    aws_subnet.private_data[availability_zone].id
+  ]
+}
+
+output "private_data_subnet_cidr_blocks" {
+  description = "Map of Availability Zone names to private data subnet CIDR blocks."
+  value = {
+    for availability_zone, subnet in aws_subnet.private_data :
+    availability_zone => subnet.cidr_block
+  }
+}
+
+# -----------------------------------------------------------------------------
+# Internet access and NAT
+# -----------------------------------------------------------------------------
 
 output "internet_gateway_id" {
-  description = "ID of the Internet Gateway attached to the VPC."
-  value       = module.vpc.internet_gateway_id
+  description = "ID of the Internet Gateway attached to the AVOS VPC."
+  value       = aws_internet_gateway.this.id
 }
 
-output "nat_gateway_ids" {
-  description = "IDs of the NAT Gateways."
-  value       = module.vpc.nat_gateway_ids
+output "nat_gateway_ids_by_az" {
+  description = "Map of NAT Gateway placement Availability Zones to NAT Gateway IDs."
+  value = {
+    for availability_zone, nat_gateway in aws_nat_gateway.this :
+    availability_zone => nat_gateway.id
+  }
 }
+
+output "nat_gateway_public_ips_by_az" {
+  description = "Map of NAT Gateway placement Availability Zones to public IP addresses."
+  value = {
+    for availability_zone, elastic_ip in aws_eip.nat :
+    availability_zone => elastic_ip.public_ip
+  }
+}
+
+# -----------------------------------------------------------------------------
+# Route tables
+# -----------------------------------------------------------------------------
 
 output "public_route_table_id" {
-  description = "ID of the public route table."
-  value       = module.vpc.public_route_table_id
+  description = "ID of the route table associated with all public subnets."
+  value       = aws_route_table.public.id
 }
 
-output "private_route_table_ids" {
-  description = "IDs of the private route tables."
-  value       = module.vpc.private_route_table_ids
+output "private_application_route_table_ids_by_az" {
+  description = "Map of Availability Zones to private application route-table IDs."
+  value = {
+    for availability_zone, route_table in aws_route_table.private_application :
+    availability_zone => route_table.id
+  }
 }
 
-###############################################################
-# Security Group Outputs
-###############################################################
-
-output "security_group_ids" {
-  description = "Map of security group IDs created by the security-groups module."
-  value       = module.security_groups.security_group_ids
+output "private_data_route_table_ids_by_az" {
+  description = "Map of Availability Zones to private data route-table IDs."
+  value = {
+    for availability_zone, route_table in aws_route_table.private_data :
+    availability_zone => route_table.id
+  }
 }
 
-output "alb_security_group_id" {
-  description = "Security group ID attached to the Application Load Balancer."
-  value       = module.security_groups.security_group_ids["alb"]
+# -----------------------------------------------------------------------------
+# Gateway VPC endpoints
+# -----------------------------------------------------------------------------
+
+output "gateway_vpc_endpoint_ids" {
+  description = "IDs of the S3 and DynamoDB Gateway VPC endpoints."
+  value = {
+    s3       = aws_vpc_endpoint.s3.id
+    dynamodb = aws_vpc_endpoint.dynamodb.id
+  }
 }
 
-###############################################################
-# ACM Outputs
-###############################################################
-
-output "certificate_arn" {
-  description = "ARN of the ACM certificate used by the HTTPS listener."
-  value       = var.enable_https ? module.acm[0].certificate_arn : null
+output "gateway_vpc_endpoint_prefix_list_ids" {
+  description = "AWS-managed prefix-list IDs used by the Gateway VPC endpoints."
+  value = {
+    s3       = aws_vpc_endpoint.s3.prefix_list_id
+    dynamodb = aws_vpc_endpoint.dynamodb.prefix_list_id
+  }
 }
 
-output "validated_certificate_arn" {
-  description = "ARN of the validated ACM certificate."
-  value       = var.enable_https ? module.acm[0].validated_certificate_arn : null
+# -----------------------------------------------------------------------------
+# VPC Flow Logs
+# -----------------------------------------------------------------------------
+
+output "vpc_flow_log_id" {
+  description = "ID of the VPC Flow Log."
+  value       = aws_flow_log.this.id
 }
 
-output "certificate_domain_name" {
-  description = "Primary domain name on the ACM certificate."
-  value       = var.enable_https ? module.acm[0].certificate_domain_name : null
+output "vpc_flow_log_destination_arn" {
+  description = "ARN of the destination receiving VPC Flow Log records."
+  value       = aws_flow_log.this.log_destination
 }
 
-output "domain_validation_options" {
-  description = "ACM DNS validation records for the requested certificate."
-  value       = var.enable_https ? module.acm[0].domain_validation_options : null
+output "vpc_flow_logs_log_group_name" {
+  description = "Name of the CloudWatch Logs group receiving VPC Flow Logs."
+  value       = aws_cloudwatch_log_group.vpc_flow_logs.name
 }
 
-output "validation_record_fqdns" {
-  description = "Route53 DNS validation record FQDNs created for ACM."
-  value       = var.enable_https ? module.acm[0].validation_record_fqdns : []
+output "vpc_flow_logs_log_group_arn" {
+  description = "ARN of the CloudWatch Logs group receiving VPC Flow Logs."
+  value       = aws_cloudwatch_log_group.vpc_flow_logs.arn
 }
 
-###############################################################
-# ALB Outputs
-###############################################################
-
-output "alb_id" {
-  description = "ID of the Application Load Balancer."
-  value       = module.alb.id
+output "vpc_flow_logs_iam_role_arn" {
+  description = "ARN of the IAM role used to deliver VPC Flow Logs."
+  value       = aws_iam_role.flow_logs.arn
 }
 
-output "alb_arn" {
-  description = "ARN of the Application Load Balancer."
-  value       = module.alb.arn
+output "vpc_flow_logs_kms_key_arn" {
+  description = "ARN of the KMS key encrypting the VPC Flow Logs log group."
+  value       = aws_kms_key.flow_logs.arn
 }
 
-output "alb_dns_name" {
-  description = "DNS name of the Application Load Balancer."
-  value       = module.alb.dns_name
+output "vpc_flow_logs_kms_alias" {
+  description = "Alias of the KMS key encrypting VPC Flow Logs."
+  value       = aws_kms_alias.flow_logs.name
 }
 
-output "alb_zone_id" {
-  description = "Route53 hosted zone ID of the Application Load Balancer."
-  value       = module.alb.zone_id
-}
+# -----------------------------------------------------------------------------
+# Network security baseline
+# -----------------------------------------------------------------------------
 
-output "alb_listener_arns" {
-  description = "Map of ALB listener ARNs."
-  value       = module.alb.listener_arns
-}
-
-output "alb_target_group_arns" {
-  description = "Map of ALB target group ARNs."
-  value       = module.alb.target_group_arns
-}
-
-output "app_target_group_arn" {
-  description = "ARN of the application target group."
-  value       = module.alb.target_group_arns["app"]
-}
-
-output "app_target_group_name" {
-  description = "Name of the application target group."
-  value       = module.alb.target_group_names["app"]
-}
-
-output "istio_ingress_target_group_arn" {
-  description = "ARN of the target group used by the Istio ingress gateway."
-  value       = module.alb.target_group_arns["istio_ingress"]
-}
-
-output "istio_ingress_target_group_name" {
-  description = "Name of the target group used by the Istio ingress gateway."
-  value       = module.alb.target_group_names["istio_ingress"]
-}
-
-output "istio_ingress_target_group_id" {
-  description = "ID of the target group used by the Istio ingress gateway."
-  value       = module.alb.target_group_ids["istio_ingress"]
-}
-
-###############################################################
-# Route53 Outputs
-###############################################################
-
-output "hosted_zone_id" {
-  description = "Route53 hosted zone ID used by the networking root."
-  value       = module.route53.hosted_zone_id
-}
-
-output "hosted_zone_name" {
-  description = "Route53 hosted zone name used by the networking root."
-  value       = module.route53.hosted_zone_name
-}
-
-output "route53_record_fqdns" {
-  description = "FQDNs of Route53 records created by the networking root."
-  value       = module.route53.record_fqdns
-}
-
-output "route53_record_names" {
-  description = "Names of Route53 records created by the networking root."
-  value       = module.route53.record_names
-}
-
-###############################################################
-# Application Endpoint Outputs
-###############################################################
-
-output "application_url" {
-  description = "Primary application URL."
-  value       = var.enable_https ? "https://${var.app_domain_name}" : "http://${var.app_domain_name}"
-}
-
-output "alb_health_check_path" {
-  description = "Health check path configured for the application target group."
-  value       = var.app_health_check_path
+output "default_security_group_id" {
+  description = "ID of the restricted default VPC security group."
+  value       = aws_default_security_group.this.id
 }
