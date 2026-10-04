@@ -1,0 +1,64 @@
+# =============================================================================
+# AVOS Container Platform — Example Input Values
+#
+# Copy this file to terraform.tfvars, replace every placeholder, and never
+# commit the resulting terraform.tfvars file.
+# =============================================================================
+
+aws_region  = "us-east-2"
+project     = "avos"
+environment = "dev"
+owner       = "PlatformEngineering"
+
+kubernetes_version = "1.35"
+
+network_state_bucket        = "REPLACE_WITH_TERRAFORM_STATE_BUCKET"
+network_state_key           = "network/terraform.tfstate"
+terraform_state_kms_key_arn = "REPLACE_WITH_TERRAFORM_STATE_KMS_KEY_ARN"
+
+administrator_role_arn = "REPLACE_WITH_PERMANENT_IAM_ROLE_ARN"
+
+cluster_endpoint_private_access = true
+cluster_endpoint_public_access  = true
+
+cluster_public_access_cidrs = [
+  "REPLACE_WITH_APPROVED_PUBLIC_IP/32"
+]
+
+cluster_log_types = [
+  "api",
+  "audit",
+  "authenticator",
+  "controllerManager",
+  "scheduler"
+]
+
+cluster_log_retention_days = 30
+cluster_deletion_protection = true
+
+kms_deletion_window_days = 30
+kms_rotation_period_days = 365
+
+addon_versions = {
+  vpc-cni                = "v1.22.4-eksbuild.3"
+  coredns                = "v1.13.2-eksbuild.31"
+  kube-proxy             = "v1.35.3-eksbuild.29"
+  eks-pod-identity-agent = "v1.3.10-eksbuild.3"
+  aws-ebs-csi-driver     = "v1.66.0-eksbuild.1"
+}
+
+system_node_instance_types = [
+  "t3.large"
+]
+
+system_node_capacity_type = "ON_DEMAND"
+system_node_ami_type      = "AL2023_x86_64_STANDARD"
+
+system_node_min_size     = 2
+system_node_desired_size = 2
+system_node_max_size     = 4
+system_node_disk_size_gib = 50
+
+additional_tags = {}
+
+karpenter_version = "1.14.1"

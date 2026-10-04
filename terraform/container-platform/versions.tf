@@ -1,5 +1,12 @@
+# =============================================================================
+# AVOS Container Platform — Terraform and Provider Requirements
+#
+# Defines the Terraform CLI and AWS provider versions supported by the AVOS
+# EKS container-platform root.
+# =============================================================================
+
 terraform {
-  required_version = ">= 1.8.0"
+  required_version = ">= 1.11, < 2.0"
 
   required_providers {
     aws = {
@@ -7,9 +14,14 @@ terraform {
       version = "~> 6.0"
     }
 
-    tls = {
-      source  = "hashicorp/tls"
-      version = "~> 4.0"
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.0"
+    }
+
+    helm = {
+      source  = "hashicorp/helm"
+      version = "~> 2.17"
     }
   }
 }
