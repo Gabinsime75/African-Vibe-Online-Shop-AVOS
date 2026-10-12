@@ -1,0 +1,17 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: avos-cert-manager-validation
+  namespace: avos-dev
+spec:
+  secretName: avos-cert-manager-validation-tls
+  issuerRef:
+    name: avos-letsencrypt-staging
+    kind: ClusterIssuer
+    group: cert-manager.io
+  dnsNames:
+    - cert-check.avos-dev.cloudhusller.com
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always

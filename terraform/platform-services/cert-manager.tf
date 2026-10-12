@@ -1,36 +1,211 @@
-###############################################################################
-# Cert-Manager
-###############################################################################
+# =============================================================================
+# AVOS Phase 6.4 — cert-manager and Route 53 DNS Validation Identity
+# =============================================================================
 
-module "cert_manager" {
-  source = "../modules/cert-manager"
+locals {
+  cert_manager_namespace       = "cert-manager"
+  cert_manager_service_account = "cert-manager"
 
-  project_name = var.project_name
-  environment  = var.environment
-  aws_region   = var.aws_region
-  cluster_name = var.cluster_name
+  cert_manager_node_selector = {
+    "eks.amazonaws.com/nodegroup" = "avos-dev-system"
+  }
+}
 
-  namespace         = "cert-manager"
-  helm_release_name = "cert-manager"
-  chart_version     = "v1.21.0"
+resource "kubernetes_namespace_v1" "cert_manager" {
+  metadata {
+    name = local.cert_manager_namespace
 
-  replica_count            = 1
-  webhook_replica_count    = 1
-  cainjector_replica_count = 1
+    labels = {
+      "app.kubernetes.io/part-of" = "avos-platform"
+    }
+  }
+}
 
-  domain_name     = "cloudhusller.com"
-  route53_zone_id = "Z08118211LIG93KC7E5CI"
-  route53_zone_arn = format(
-    "arn:aws:route53:::hostedzone/%s",
-    "Z08118211LIG93KC7E5CI"
-  )
+data "aws_iam_policy_document" "cert_manager_assume_role" {
+  statement {
+    sid     = "AllowEKSPodIdentity"
+    effect  = "Allow"
+    actions = ["sts:AssumeRole", "sts:TagSession"]
 
-  create_cluster_issuers         = true
-  create_staging_cluster_issuer  = true
-  staging_cluster_issuer_name    = "letsencrypt-staging"
-  production_cluster_issuer_name = "letsencrypt-prod"
+    principals {
+      type        = "Service"
+      identifiers = ["pods.eks.amazonaws.com"]
+    }
 
-  letsencrypt_email = "gabinsime@yahoo.com"
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/eks-cluster-arn"
+      values   = [data.aws_eks_cluster.this.arn]
+    }
 
-  tags = local.common_tags
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/kubernetes-namespace"
+      values   = [local.cert_manager_namespace]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/kubernetes-service-account"
+      values   = [local.cert_manager_service_account]
+    }
+  }
+}
+
+resource "aws_iam_role" "cert_manager" {
+  name               = "avos-${var.environment}-cert-manager"
+  assume_role_policy = data.aws_iam_policy_document.cert_manager_assume_role.json
+}
+
+data "aws_iam_policy_document" "cert_manager" {
+  statement {
+    sid       = "ReadDNSChangeStatus"
+    effect    = "Allow"
+    actions   = ["route53:GetChange"]
+    resources = ["arn:aws:route53:::change/*"]
+  }
+
+  statement {
+    sid       = "ReadDevelopmentHostedZoneRecords"
+    effect    = "Allow"
+    actions   = ["route53:ListResourceRecordSets"]
+    resources = ["arn:aws:route53:::hostedzone/Z08118211LIG93KC7E5CI"]
+  }
+
+  statement {
+    sid       = "ManageDevelopmentACMEChallenges"
+    effect    = "Allow"
+    actions   = ["route53:ChangeResourceRecordSets"]
+    resources = ["arn:aws:route53:::hostedzone/Z08118211LIG93KC7E5CI"]
+
+    condition {
+      test     = "ForAllValues:StringEquals"
+      variable = "route53:ChangeResourceRecordSetsRecordTypes"
+      values   = ["TXT"]
+    }
+
+    condition {
+      test     = "ForAllValues:StringEquals"
+      variable = "route53:ChangeResourceRecordSetsActions"
+      values   = ["CREATE", "UPSERT", "DELETE"]
+    }
+
+    condition {
+      test     = "ForAllValues:StringLike"
+      variable = "route53:ChangeResourceRecordSetsNormalizedRecordNames"
+      values = [
+        "_acme-challenge.avos-dev.cloudhusller.com",
+        "_acme-challenge.*.avos-dev.cloudhusller.com"
+      ]
+    }
+  }
+}
+
+resource "aws_iam_policy" "cert_manager" {
+  name   = "avos-${var.environment}-cert-manager"
+  policy = data.aws_iam_policy_document.cert_manager.json
+}
+
+resource "aws_iam_role_policy_attachment" "cert_manager" {
+  role       = aws_iam_role.cert_manager.name
+  policy_arn = aws_iam_policy.cert_manager.arn
+}
+
+resource "aws_eks_pod_identity_association" "cert_manager" {
+  cluster_name    = data.aws_eks_cluster.this.name
+  namespace       = local.cert_manager_namespace
+  service_account = local.cert_manager_service_account
+  role_arn        = aws_iam_role.cert_manager.arn
+
+  depends_on = [
+    aws_iam_role_policy_attachment.cert_manager
+  ]
+}
+
+resource "helm_release" "cert_manager" {
+  name       = "cert-manager"
+  namespace  = kubernetes_namespace_v1.cert_manager.metadata[0].name
+  repository = "oci://quay.io/jetstack/charts"
+  chart      = "cert-manager"
+  version    = "v1.21.2"
+
+  atomic          = true
+  cleanup_on_fail = true
+  wait            = true
+  timeout         = 600
+
+  values = [
+    yamlencode({
+      crds = {
+        enabled = true
+        keep    = true
+      }
+
+      global = {
+        priorityClassName = "system-cluster-critical"
+      }
+
+      serviceAccount = {
+        create = true
+        name   = local.cert_manager_service_account
+      }
+
+      replicaCount              = 2
+      nodeSelector              = local.cert_manager_node_selector
+      topologySpreadConstraints = local.controller_topology_spread.cert_manager_controller
+
+      resources = {
+        requests = {
+          cpu    = "100m"
+          memory = "128Mi"
+        }
+        limits = {
+          cpu    = "500m"
+          memory = "256Mi"
+        }
+      }
+
+      webhook = {
+        replicaCount              = 2
+        nodeSelector              = local.cert_manager_node_selector
+        topologySpreadConstraints = local.controller_topology_spread.cert_manager_webhook
+
+        resources = {
+          requests = {
+            cpu    = "50m"
+            memory = "64Mi"
+          }
+          limits = {
+            cpu    = "250m"
+            memory = "128Mi"
+          }
+        }
+      }
+
+      cainjector = {
+        replicaCount              = 2
+        nodeSelector              = local.cert_manager_node_selector
+        topologySpreadConstraints = local.controller_topology_spread.cert_manager_cainjector
+
+        resources = {
+          requests = {
+            cpu    = "50m"
+            memory = "64Mi"
+          }
+          limits = {
+            cpu    = "250m"
+            memory = "128Mi"
+          }
+        }
+      }
+
+      startupapicheck = {
+        nodeSelector = local.cert_manager_node_selector
+      }
+    })
+  ]
+
+  depends_on = [
+    aws_eks_pod_identity_association.cert_manager
+  ]
 }

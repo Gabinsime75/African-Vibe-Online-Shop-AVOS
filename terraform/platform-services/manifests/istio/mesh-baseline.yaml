@@ -1,0 +1,57 @@
+# Mesh-wide default for workloads with Istio proxies.
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: avos-mesh-strict-mtls
+  namespace: istio-system
+spec:
+  mtls:
+    mode: STRICT
+---
+# Explicit exception for the current ALB HTTP listener.
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: avos-gateway-edge-exception
+  namespace: istio-ingress
+spec:
+  selector:
+    matchLabels:
+      app: avos-ingress
+  mtls:
+    mode: STRICT
+  portLevelMtls:
+    80:
+      mode: DISABLE
+---
+# Application workloads require explicit ALLOW policies.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: avos-default-deny
+  namespace: avos-dev
+spec:
+  action: ALLOW
+  rules: []
+---
+# Shared client-side defaults for AVOS development Services.
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: avos-dev-service-defaults
+  namespace: istio-system
+spec:
+  host: "*.avos-dev.svc.cluster.local"
+  exportTo:
+    - "*"
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+    connectionPool:
+      tcp:
+        connectTimeout: 2s
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 10s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50

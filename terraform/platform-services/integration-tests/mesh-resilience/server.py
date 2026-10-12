@@ -1,0 +1,43 @@
+import json
+import threading
+import time
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import parse_qs, urlparse
+
+attempts = {}
+lock = threading.Lock()
+
+class Handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        parsed = urlparse(self.path)
+        query = parse_qs(parsed.query)
+        status = 200
+        body = b"avos-resilience-ok\n"
+
+        if parsed.path == "/slow":
+            time.sleep(5)
+
+        elif parsed.path == "/retry":
+            test = query.get("test", ["default"])[0]
+            failures = int(query.get("failures", ["2"])[0])
+            with lock:
+                attempts[test] = attempts.get(test, 0) + 1
+                attempt = attempts[test]
+            status = 503 if attempt <= failures else 200
+            print(json.dumps({
+                "test": test,
+                "attempt": attempt,
+                "status": status
+            }), flush=True)
+            body = f"test={test} attempt={attempt} status={status}\n".encode()
+
+        self.send_response(status)
+        self.send_header("Content-Type", "text/plain")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        try:
+            self.wfile.write(body)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+
+ThreadingHTTPServer(("0.0.0.0", 8080), Handler).serve_forever()

@@ -1,0 +1,128 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: avos-resilience-server
+  namespace: avos-dev
+data:
+  server.py: |
+    import time
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            if self.path.startswith("/slow"):
+                time.sleep(5)
+            body = b"avos-resilience-ok\n"
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            try:
+                self.wfile.write(body)
+            except (BrokenPipeError, ConnectionResetError):
+                pass
+
+    ThreadingHTTPServer(("0.0.0.0", 8080), Handler).serve_forever()
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: avos-resilience-server
+  namespace: avos-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: avos-resilience-server
+  template:
+    metadata:
+      labels:
+        app: avos-resilience-server
+        sidecar.istio.io/inject: "true"
+    spec:
+      serviceAccountName: avos-mesh-backend
+      containers:
+        - name: http
+          image: python:3.12-slim
+          command: ["python", "-u", "/app/server.py"]
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          volumeMounts:
+            - name: server
+              mountPath: /app
+              readOnly: true
+      volumes:
+        - name: server
+          configMap:
+            name: avos-resilience-server
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: avos-resilience-server
+  namespace: avos-dev
+spec:
+  selector:
+    app: avos-resilience-server
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: avos-resilience-test-access
+  namespace: avos-dev
+spec:
+  selector:
+    matchLabels:
+      app: avos-resilience-server
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/avos-dev/sa/avos-mesh-approved
+              - cluster.local/ns/istio-ingress/sa/avos-ingress
+      to:
+        - operation:
+            methods: ["GET"]
+            ports: ["8080"]
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: avos-resilience-check
+  namespace: avos-dev
+spec:
+  parentRefs:
+    - name: avos-gateway
+      namespace: istio-ingress
+      sectionName: http
+  hostnames:
+    - resilience-check.avos-dev.cloudhusller.com
+  rules:
+    - matches:
+        - method: GET
+          path:
+            type: PathPrefix
+            value: /
+      timeouts:
+        request: 2s
+        backendRequest: 2s
+      backendRefs:
+        - name: avos-resilience-server
+          port: 8080

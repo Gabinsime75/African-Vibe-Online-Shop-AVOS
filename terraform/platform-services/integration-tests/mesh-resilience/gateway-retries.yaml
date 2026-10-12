@@ -1,0 +1,31 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: avos-resilience-get-retries
+  namespace: istio-ingress
+spec:
+  workloadSelector:
+    labels:
+      app: avos-ingress
+  configPatches:
+    - applyTo: HTTP_ROUTE
+      match:
+        context: GATEWAY
+        routeConfiguration:
+          name: http.80
+          vhost:
+            name: resilience-check.avos-dev.cloudhusller.com:80
+            route:
+              name: avos-dev.avos-resilience-check.0
+      patch:
+        operation: MERGE
+        value:
+          route:
+            retry_policy:
+              retry_on: retriable-status-codes
+              retriable_status_codes: [503]
+              num_retries: 2
+              per_try_timeout: 1s
+              retry_back_off:
+                base_interval: 0.1s
+                max_interval: 0.5s
