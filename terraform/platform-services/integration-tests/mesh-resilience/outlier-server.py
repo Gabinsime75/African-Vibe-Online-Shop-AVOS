@@ -1,0 +1,23 @@
+import os
+import socket
+import time
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+class Handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        status = 200
+        if self.path.startswith("/slow"):
+            time.sleep(5)
+        if self.path.startswith("/outlier") and os.path.exists("/tmp/avos-fail"):
+            status = 500
+        body = f"pod={socket.gethostname()} status={status}\n".encode()
+        self.send_response(status)
+        self.send_header("Content-Type", "text/plain")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        try:
+            self.wfile.write(body)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+
+ThreadingHTTPServer(("0.0.0.0", 8080), Handler).serve_forever()

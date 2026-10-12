@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: avos-external-dns-check
+  namespace: default
+  annotations:
+    avos.io/external-dns: "enabled"
+    external-dns.kubernetes.io/hostname: dns-check.avos-dev.cloudhusller.com
+    external-dns.kubernetes.io/ttl: "60"
+spec:
+  type: ExternalName
+  externalName: example.com

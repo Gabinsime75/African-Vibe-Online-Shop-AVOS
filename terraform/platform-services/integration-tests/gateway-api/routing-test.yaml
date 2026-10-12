@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: avos-gateway-check
+  namespace: avos-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: avos-gateway-check
+  template:
+    metadata:
+      labels:
+        app: avos-gateway-check
+      annotations:
+        sidecar.istio.io/inject: "false"
+    spec:
+      containers:
+        - name: http
+          image: hashicorp/http-echo:1.0.0
+          args:
+            - "-listen=:8080"
+            - "-text=avos-gateway-api-ok"
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: avos-gateway-check
+  namespace: avos-dev
+spec:
+  selector:
+    app: avos-gateway-check
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: avos-gateway-check
+  namespace: avos-dev
+spec:
+  parentRefs:
+    - name: avos-gateway
+      namespace: istio-ingress
+      sectionName: http
+  hostnames:
+    - gateway-check.avos-dev.cloudhusller.com
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: avos-gateway-check
+          port: 8080

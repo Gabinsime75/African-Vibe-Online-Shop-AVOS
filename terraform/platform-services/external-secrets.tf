@@ -1,129 +1,219 @@
-################################################################################
-# External Secrets Operator
-#
-# This module deploys the External Secrets Operator into the Amazon EKS cluster.
-# It integrates Kubernetes with AWS Secrets Manager using Amazon EKS Pod
-# Identity, allowing workloads to consume secrets without storing AWS
-# credentials inside the cluster.
-################################################################################
+# =============================================================================
+# AVOS External Secrets — Development Scope and EKS Pod Identity
+# =============================================================================
 
-module "external_secrets" {
+locals {
+  external_secrets_namespace          = "external-secrets"
+  external_secrets_workload_namespace = "avos-dev"
+  external_secrets_service_account    = "external-secrets"
 
-  source = "../modules/external-secrets"
+  external_secrets_node_selector = {
+    "eks.amazonaws.com/nodegroup" = "avos-dev-system"
+  }
+}
 
-  ##############################################################################
-  # Platform
-  ##############################################################################
+resource "kubernetes_namespace_v1" "external_secrets" {
+  metadata {
+    name = local.external_secrets_namespace
+  }
+}
 
-  platform_name = var.project_name
+resource "kubernetes_namespace_v1" "avos_dev" {
+  metadata {
+    name = local.external_secrets_workload_namespace
+  }
+}
 
-  name = "external-secrets"
+data "aws_iam_policy_document" "external_secrets_assume_role" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole", "sts:TagSession"]
 
-  tags = local.common_tags
+    principals {
+      type        = "Service"
+      identifiers = ["pods.eks.amazonaws.com"]
+    }
 
-  ##############################################################################
-  # EKS
-  ##############################################################################
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/eks-cluster-arn"
+      values   = [data.aws_eks_cluster.this.arn]
+    }
 
-  cluster_name = var.cluster_name
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/kubernetes-namespace"
+      values   = [local.external_secrets_namespace]
+    }
 
-  namespace = "external-secrets"
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/kubernetes-service-account"
+      values   = [local.external_secrets_service_account]
+    }
+  }
+}
 
-  service_account_name = "external-secrets"
+resource "aws_iam_role" "external_secrets" {
+  name               = "avos-${var.environment}-external-secrets"
+  assume_role_policy = data.aws_iam_policy_document.external_secrets_assume_role.json
+}
 
-  ##############################################################################
-  # AWS
-  ##############################################################################
+data "aws_iam_policy_document" "external_secrets" {
+  statement {
+    sid    = "ReadAvosDevelopmentSecrets"
+    effect = "Allow"
 
-  aws_region = var.aws_region
+    actions = [
+      "secretsmanager:GetSecretValue",
+      "secretsmanager:DescribeSecret"
+    ]
 
-  enable_secrets_manager = true
+    resources = [
+      "arn:aws:secretsmanager:${var.aws_region}:${var.aws_account_id}:secret:avos/dev/*"
+    ]
+  }
+}
 
-  enable_parameter_store = false
+resource "aws_iam_policy" "external_secrets" {
+  name   = "avos-${var.environment}-external-secrets"
+  policy = data.aws_iam_policy_document.external_secrets.json
+}
 
-  secrets_manager_secret_arns = [
-    "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:cloudhustler/dev/*"
+resource "aws_iam_role_policy_attachment" "external_secrets" {
+  role       = aws_iam_role.external_secrets.name
+  policy_arn = aws_iam_policy.external_secrets.arn
+}
+
+resource "aws_eks_pod_identity_association" "external_secrets" {
+  cluster_name    = data.aws_eks_cluster.this.name
+  namespace       = local.external_secrets_namespace
+  service_account = local.external_secrets_service_account
+  role_arn        = aws_iam_role.external_secrets.arn
+
+  depends_on = [
+    aws_iam_role_policy_attachment.external_secrets
+  ]
+}
+
+resource "helm_release" "external_secrets" {
+  name       = "external-secrets"
+  namespace  = kubernetes_namespace_v1.external_secrets.metadata[0].name
+  repository = "https://charts.external-secrets.io"
+  chart      = "external-secrets"
+  version    = "2.12.0"
+
+  atomic          = true
+  cleanup_on_fail = true
+  wait            = true
+  timeout         = 600
+
+  values = [
+    yamlencode({
+      installCRDs = true
+
+      replicaCount = 2
+      leaderElect  = true
+
+      livenessProbe = {
+        enabled = true
+      }
+
+      readinessProbe = {
+        enabled = true
+      }
+
+      serviceAccount = {
+        create = true
+        name   = local.external_secrets_service_account
+      }
+
+      scopedNamespace = local.external_secrets_workload_namespace
+      scopedRBAC      = true
+
+      processClusterStore          = false
+      processClusterExternalSecret = false
+      processClusterGenerator      = false
+      processClusterPushSecret     = false
+      processPushSecret            = false
+
+      nodeSelector      = local.external_secrets_node_selector
+      priorityClassName = "system-cluster-critical"
+
+      resources = {
+        requests = {
+          cpu    = "100m"
+          memory = "128Mi"
+        }
+        limits = {
+          cpu    = "500m"
+          memory = "256Mi"
+        }
+      }
+
+      podDisruptionBudget = {
+        enabled      = true
+        minAvailable = 1
+      }
+
+      topologySpreadConstraints = local.controller_topology_spread.external_secrets_controller
+
+      webhook = {
+        replicaCount              = 2
+        nodeSelector              = local.external_secrets_node_selector
+        priorityClassName         = "system-cluster-critical"
+        topologySpreadConstraints = local.controller_topology_spread.external_secrets_webhook
+        livenessProbe = {
+          enabled = true
+        }
+
+        resources = {
+          requests = {
+            cpu    = "50m"
+            memory = "64Mi"
+          }
+          limits = {
+            cpu    = "250m"
+            memory = "128Mi"
+          }
+        }
+      }
+
+      certController = {
+        replicaCount      = 1
+        nodeSelector      = local.external_secrets_node_selector
+        priorityClassName = "system-cluster-critical"
+
+        livenessProbe = {
+          enabled = true
+        }
+
+        resources = {
+          requests = {
+            cpu    = "50m"
+            memory = "64Mi"
+          }
+          limits = {
+            cpu    = "250m"
+            memory = "128Mi"
+          }
+        }
+      }
+    })
   ]
 
-  parameter_store_parameter_arns = []
+  depends_on = [
+    kubernetes_namespace_v1.avos_dev,
+    aws_iam_role_policy_attachment.external_secrets,
+    aws_eks_pod_identity_association.external_secrets
+  ]
+}
 
-  kms_key_arns = []
+output "external_secrets_role_arn" {
+  description = "Pod Identity role for the AVOS development ESO controller."
+  value       = aws_iam_role.external_secrets.arn
+}
 
-  ##############################################################################
-  # Cluster Secret Store
-  ##############################################################################
-
-  create_cluster_secret_store = true
-
-  cluster_secret_store_name = "aws-secrets-manager"
-
-  secret_store_service = "SecretsManager"
-
-  ##############################################################################
-  # Helm
-  ##############################################################################
-
-  chart_version = "2.4.1"
-
-  replica_count = 1
-
-  create_namespace = true
-
-  helm_atomic = true
-
-  helm_cleanup_on_fail = true
-
-  helm_wait = true
-
-  helm_timeout = 600
-
-  ##############################################################################
-  # Controller
-  ##############################################################################
-
-  controller_class = ""
-
-  process_cluster_external_secret = true
-
-  process_cluster_store = true
-
-  process_push_secret = false
-
-  process_cluster_push_secret = false
-
-  concurrent = 1
-
-  log_level = "info"
-
-  log_time_encoding = "epoch"
-
-  ##############################################################################
-  # Webhook
-  ##############################################################################
-
-  enable_webhook = true
-
-  webhook_replica_count = 1
-
-  ##############################################################################
-  # Certificate Controller
-  ##############################################################################
-
-  enable_cert_controller = true
-
-  cert_controller_replica_count = 1
-
-  ##############################################################################
-  # Monitoring
-  ##############################################################################
-
-  enable_service_monitor = false
-
-  metrics_service_enabled = true
-
-  ##############################################################################
-  # Availability
-  ##############################################################################
-
-  pod_disruption_budget_enabled = false
+output "external_secrets_pod_identity_association_id" {
+  value = aws_eks_pod_identity_association.external_secrets.association_id
 }

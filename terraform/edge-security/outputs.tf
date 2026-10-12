@@ -1,20 +1,15 @@
-# =============================================================================
-# CloudHustler Commerce Platform
-# Phase 7 - Edge & Security
-# Outputs
-# =============================================================================
-
-output "cloudfront_distribution_id" {
-  description = "CloudFront distribution ID."
-  value       = module.cloudfront.distribution_id
+output "alb_arn" {
+  value = aws_lb.avos.arn
 }
 
-output "cloudfront_domain_name" {
-  description = "CloudFront-generated domain used for Phase 7.1 validation."
-  value       = module.cloudfront.domain_name
+output "alb_dns_name" {
+  value = aws_lb.avos.dns_name
 }
 
-output "cloudfront_status" {
-  description = "CloudFront distribution deployment status."
-  value       = module.cloudfront.status
+output "alb_security_group_id" {
+  value = aws_security_group.alb.id
+}
+
+output "istio_target_group_arn" {
+  value = aws_lb_target_group.istio.arn
 }

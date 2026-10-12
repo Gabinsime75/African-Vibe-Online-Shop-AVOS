@@ -1,115 +1,207 @@
-################################################################################
-# ExternalDNS Module: Deploys ExternalDNS using Helm and authorizes it to manage DNS records inside the configured CloudHustler Route 53 hosted zone.
-################################################################################
-module "external_dns" {
-  source = "../modules/external-dns"
+# =============================================================================
+# AVOS ExternalDNS — Scoped Route 53 Access through EKS Pod Identity
+# =============================================================================
 
-  ##############################################################################
-  # Platform Identification
-  ##############################################################################
+locals {
+  external_dns_zone_id         = "Z08118211LIG93KC7E5CI"
+  external_dns_zone_domain     = "cloudhusller.com"
+  external_dns_domain_scope    = "avos-dev.cloudhusller.com"
+  external_dns_namespace       = "kube-system"
+  external_dns_service_account = "external-dns"
+}
 
-  platform_name = var.project_name
+# Only the approved cluster, namespace, and service account may assume this role.
+data "aws_iam_policy_document" "external_dns_assume_role" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole", "sts:TagSession"]
 
-  ##############################################################################
-  # EKS Cluster Configuration
-  ##############################################################################
+    principals {
+      type        = "Service"
+      identifiers = ["pods.eks.amazonaws.com"]
+    }
 
-  cluster_name = var.cluster_name
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/eks-cluster-arn"
+      values   = [data.aws_eks_cluster.this.arn]
+    }
 
-  name = "${var.project_name}-${var.environment}-external-dns"
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/kubernetes-namespace"
+      values   = [local.external_dns_namespace]
+    }
 
-  namespace = var.external_dns_namespace
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/kubernetes-service-account"
+      values   = [local.external_dns_service_account]
+    }
+  }
+}
 
-  service_account_name = var.external_dns_service_account_name
+resource "aws_iam_role" "external_dns" {
+  name               = "avos-${var.environment}-external-dns"
+  assume_role_policy = data.aws_iam_policy_document.external_dns_assume_role.json
+}
 
+# Discovery is read-only. Record access and mutations are scoped separately.
+data "aws_iam_policy_document" "external_dns" {
+  statement {
+    sid       = "DiscoverHostedZones"
+    effect    = "Allow"
+    actions   = ["route53:ListHostedZones"]
+    resources = ["*"]
+  }
 
-  ##############################################################################
-  # Route 53 Configuration
-  ##############################################################################
+  statement {
+    sid    = "ReadApprovedHostedZone"
+    effect = "Allow"
 
-  hosted_zone_id = var.route53_hosted_zone_id
+    actions = [
+      "route53:ListResourceRecordSets",
+      "route53:ListTagsForResources"
+    ]
 
-  domain_filters = var.external_dns_domain_filters
+    resources = [
+      "arn:aws:route53:::hostedzone/${local.external_dns_zone_id}"
+    ]
+  }
 
-  aws_zone_type = var.external_dns_aws_zone_type
+  statement {
+    sid     = "WriteApprovedDevelopmentRecords"
+    effect  = "Allow"
+    actions = ["route53:ChangeResourceRecordSets"]
+    resources = [
+      "arn:aws:route53:::hostedzone/${local.external_dns_zone_id}"
+    ]
 
+    condition {
+      test     = "ForAllValues:StringLike"
+      variable = "route53:ChangeResourceRecordSetsNormalizedRecordNames"
+      values = [
+        local.external_dns_domain_scope,
+        "*.${local.external_dns_domain_scope}"
+      ]
+    }
 
-  ##############################################################################
-  # DNS Synchronization Configuration
-  ##############################################################################
+    condition {
+      test     = "ForAllValues:StringEquals"
+      variable = "route53:ChangeResourceRecordSetsRecordTypes"
+      values   = ["A", "AAAA", "CNAME", "TXT"]
+    }
 
-  sources = var.external_dns_sources
+    condition {
+      test     = "ForAllValues:StringEquals"
+      variable = "route53:ChangeResourceRecordSetsActions"
+      values   = ["CREATE", "UPSERT"]
+    }
+  }
+}
 
-  policy = var.external_dns_policy
+resource "aws_iam_policy" "external_dns" {
+  name   = "avos-${var.environment}-external-dns"
+  policy = data.aws_iam_policy_document.external_dns.json
+}
 
-  registry = var.external_dns_registry
+resource "aws_iam_role_policy_attachment" "external_dns" {
+  role       = aws_iam_role.external_dns.name
+  policy_arn = aws_iam_policy.external_dns.arn
+}
 
-  txt_owner_id = var.external_dns_txt_owner_id
+resource "aws_eks_pod_identity_association" "external_dns" {
+  cluster_name    = data.aws_eks_cluster.this.name
+  namespace       = local.external_dns_namespace
+  service_account = local.external_dns_service_account
+  role_arn        = aws_iam_role.external_dns.arn
 
-  txt_prefix = var.external_dns_txt_prefix
+  depends_on = [
+    aws_iam_role_policy_attachment.external_dns
+  ]
+}
 
-  interval = var.external_dns_interval
+resource "helm_release" "external_dns" {
+  name       = "external-dns"
+  namespace  = local.external_dns_namespace
+  repository = "https://kubernetes-sigs.github.io/external-dns/"
+  chart      = "external-dns"
+  version    = "1.22.0"
 
-  trigger_loop_on_event = var.external_dns_trigger_loop_on_event
+  atomic          = true
+  cleanup_on_fail = true
+  wait            = true
+  timeout         = 600
 
-  aws_batch_change_size = var.external_dns_aws_batch_change_size
+  values = [
+    yamlencode({
+      provider = {
+        name = "aws"
+      }
 
+      serviceAccount = {
+        create = true
+        name   = local.external_dns_service_account
+      }
 
-  ##############################################################################
-  # Helm Configuration
-  ##############################################################################
+      sources          = ["service", "ingress"]
+      domainFilters    = [local.external_dns_zone_domain]
+      annotationFilter = "avos.io/external-dns=enabled"
 
-  helm_repository = var.external_dns_helm_repository
+      policy     = "upsert-only"
+      registry   = "txt"
+      txtOwnerId = "${var.cluster_name}-external-dns"
+      txtPrefix  = "_externaldns."
 
-  chart_name = var.external_dns_chart_name
+      interval = "1m"
 
-  chart_version = var.external_dns_chart_version
+      extraArgs = [
+        "--zone-id-filter=${local.external_dns_zone_id}",
+        "--aws-zone-type=public",
+      ]
 
-  replica_count = var.external_dns_replica_count
+      env = [
+        {
+          name  = "AWS_REGION"
+          value = var.aws_region
+        }
+      ]
 
+      nodeSelector = {
+        "eks.amazonaws.com/nodegroup" = "avos-dev-system"
+      }
 
-  ##############################################################################
-  # Logging and Observability
-  ##############################################################################
+      priorityClassName = "system-cluster-critical"
 
-  log_level = var.external_dns_log_level
+      resources = {
+        requests = {
+          cpu    = "100m"
+          memory = "128Mi"
+        }
+        limits = {
+          cpu    = "500m"
+          memory = "256Mi"
+        }
+      }
+    })
+  ]
 
-  log_format = var.external_dns_log_format
+  depends_on = [
+    aws_iam_role_policy_attachment.external_dns,
+    aws_eks_pod_identity_association.external_dns
+  ]
+}
 
-  enable_service_monitor = var.external_dns_enable_service_monitor
+output "external_dns_role_arn" {
+  description = "Dedicated ExternalDNS Pod Identity role."
+  value       = aws_iam_role.external_dns.arn
+}
 
-  service_monitor_namespace = var.external_dns_service_monitor_namespace
+output "external_dns_domain_scope" {
+  description = "DNS names permitted by the ExternalDNS IAM policy."
+  value       = local.external_dns_domain_scope
+}
 
-
-  ##############################################################################
-  # Kubernetes Scheduling and Resource Configuration
-  ##############################################################################
-
-  resources = var.external_dns_resources
-
-  pod_labels = var.external_dns_pod_labels
-
-  pod_annotations = var.external_dns_pod_annotations
-
-  node_selector = var.external_dns_node_selector
-
-  tolerations = var.external_dns_tolerations
-
-  affinity = var.external_dns_affinity
-
-  priority_class_name = var.external_dns_priority_class_name
-
-
-  ##############################################################################
-  # Extensibility
-  ##############################################################################
-
-  additional_helm_values = var.external_dns_additional_helm_values
-
-
-  ##############################################################################
-  # Standard AWS Tags
-  ##############################################################################
-
-  tags = local.common_tags
+output "external_dns_pod_identity_association_id" {
+  value = aws_eks_pod_identity_association.external_dns.association_id
 }

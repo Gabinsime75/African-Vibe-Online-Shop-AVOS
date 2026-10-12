@@ -1,46 +1,31 @@
-################################################################################
-# Istio Ingress TargetGroupBinding
-################################################################################
+# =============================================================================
+# AVOS Phase 6.7 — ALB Target Group to Istio Gateway
+# =============================================================================
 
-# module "istio_ingress_target_group_binding" {
-#   source = "../modules/target-group-binding"
+resource "kubernetes_manifest" "istio_target_group_binding" {
+  manifest = {
+    apiVersion = "elbv2.k8s.aws/v1beta1"
+    kind       = "TargetGroupBinding"
 
-#   name      = "istio-ingress"
-#   namespace = "istio-ingress"
+    metadata = {
+      name      = "avos-ingress"
+      namespace = "istio-ingress"
+    }
 
-#   service_name = "istio-ingress"
-#   service_port = 80
+    spec = {
+      targetGroupARN = "arn:aws:elasticloadbalancing:us-east-2:396913735153:targetgroup/avos-dev-istio/a371195a4260063f"
+      targetType     = "ip"
+      vpcID          = data.aws_vpc.this.id
 
-#   target_group_arn = "arn:aws:elasticloadbalancing:us-east-2:396913735153:targetgroup/cloudhusller-dev-istio-ingress/0c4b1f50af0b4233"
-#   target_type      = "ip"
-
-#   labels = {
-#     "app.kubernetes.io/name"       = "istio-ingress"
-#     "app.kubernetes.io/instance"   = "istio-ingress"
-#     "app.kubernetes.io/component"  = "ingress-gateway"
-#     "app.kubernetes.io/part-of"    = "cloudhustler-commerce-platform"
-#     "app.kubernetes.io/managed-by" = "terraform"
-#   }
-
-#   depends_on = [
-#     module.aws_load_balancer_controller,
-#     module.istio_ingress_gateway
-#   ]
-# }
-
-module "istio_ingress_target_group_binding" {
-  source = "../modules/target-group-binding"
-
-  name             = "istio-ingress"
-  namespace        = "istio-ingress"
-  service_name     = "istio-ingress"
-  service_port     = 80
-  target_type      = "ip"
-  target_group_arn = var.istio_ingress_target_group_arn
+      serviceRef = {
+        name = "avos-ingress"
+        port = 80
+      }
+    }
+  }
 
   depends_on = [
-    module.aws_load_balancer_controller,
-    module.istio_ingress_gateway
+    helm_release.load_balancer_controller,
+    helm_release.istio_ingress_gateway
   ]
 }
-

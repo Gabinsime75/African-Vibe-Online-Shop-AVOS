@@ -1,0 +1,156 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: avos-mesh-approved
+  namespace: avos-dev
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: avos-mesh-unapproved
+  namespace: avos-dev
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: avos-mesh-backend
+  namespace: avos-dev
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: avos-mesh-backend
+  namespace: avos-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: avos-mesh-backend
+  template:
+    metadata:
+      labels:
+        app: avos-mesh-backend
+        sidecar.istio.io/inject: "true"
+    spec:
+      serviceAccountName: avos-mesh-backend
+      containers:
+        - name: http
+          image: hashicorp/http-echo:1.0.0
+          args:
+            - "-listen=:8080"
+            - "-text=avos-mesh-security-ok"
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: avos-mesh-backend
+  namespace: avos-dev
+spec:
+  selector:
+    app: avos-mesh-backend
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: avos-mesh-backend-approved
+  namespace: avos-dev
+spec:
+  selector:
+    matchLabels:
+      app: avos-mesh-backend
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/avos-dev/sa/avos-mesh-approved
+      to:
+        - operation:
+            methods:
+              - GET
+            ports:
+              - "8080"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: avos-mesh-approved
+  namespace: avos-dev
+  labels:
+    app: avos-mesh-client
+    sidecar.istio.io/inject: "true"
+spec:
+  serviceAccountName: avos-mesh-approved
+  containers:
+    - name: curl
+      image: curlimages/curl:8.12.1
+      command: ["sh", "-c", "sleep 86400"]
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: avos-mesh-unapproved
+  namespace: avos-dev
+  labels:
+    app: avos-mesh-client
+    sidecar.istio.io/inject: "true"
+spec:
+  serviceAccountName: avos-mesh-unapproved
+  containers:
+    - name: curl
+      image: curlimages/curl:8.12.1
+      command: ["sh", "-c", "sleep 86400"]
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: avos-mesh-plaintext
+  namespace: avos-dev
+  labels:
+    app: avos-mesh-client
+    sidecar.istio.io/inject: "false"
+spec:
+  serviceAccountName: avos-mesh-approved
+  containers:
+    - name: curl
+      image: curlimages/curl:8.12.1
+      command: ["sh", "-c", "sleep 86400"]
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi

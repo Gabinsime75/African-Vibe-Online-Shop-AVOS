@@ -1,0 +1,18 @@
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: avos-letsencrypt-staging
+spec:
+  acme:
+    email: "gabinsime@yahoo.com"
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: avos-letsencrypt-staging-account
+    solvers:
+      - selector:
+          dnsZones:
+            - avos-dev.cloudhusller.com
+        dns01:
+          route53:
+            region: us-east-2
+            hostedZoneID: Z08118211LIG93KC7E5CI
