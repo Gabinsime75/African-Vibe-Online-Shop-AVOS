@@ -6,7 +6,7 @@ The module supports multiple listeners, listener rules, weighted target groups, 
 
 ---
 
-# 🎯 Purpose
+## 🎯 Purpose
 
 This module creates:
 
@@ -21,9 +21,9 @@ This module creates:
 
 ---
 
-# 🏗 Architecture
+## 🏗 Architecture
 
-```
+```text
                 Internet
                     │
                     ▼
@@ -42,7 +42,7 @@ This module creates:
 
 ---
 
-# 🚀 Features
+## 🚀 Features
 
 - Internet-facing or Internal ALB
 - HTTP Listeners
@@ -64,7 +64,7 @@ This module creates:
 
 ---
 
-# 📦 Resources Created
+## 📦 Resources Created
 
 - aws_lb
 - aws_lb_target_group
@@ -73,9 +73,9 @@ This module creates:
 
 ---
 
-# 📁 Module Structure
+## 📁 Module Structure
 
-```
+```text
 modules/
 └── alb/
     ├── data.tf
@@ -91,7 +91,7 @@ modules/
 
 ---
 
-# 📥 Inputs
+## 📥 Inputs
 
 | Name | Description |
 |------|-------------|
@@ -107,7 +107,7 @@ modules/
 
 ---
 
-# 📤 Outputs
+## 📤 Outputs
 
 | Name | Description |
 |------|-------------|
@@ -125,7 +125,7 @@ modules/
 
 ---
 
-# 💻 Example Usage
+## 💻 Example Usage
 
 ```hcl
 module "alb" {
@@ -159,7 +159,7 @@ module "alb" {
 
 ---
 
-# 🔒 Security Considerations
+## 🔒 Security Considerations
 
 - Supports HTTPS listeners with ACM certificates.
 - Supports internal and internet-facing deployments.
@@ -170,7 +170,7 @@ module "alb" {
 
 ---
 
-# 💡 Design Decisions
+## 💡 Design Decisions
 
 - One reusable module for all ALB deployments.
 - Dynamic listeners.
@@ -182,6 +182,6 @@ module "alb" {
 
 ---
 
-# 📖 Next Steps
+## 📖 Next Steps
 
 This module is intended to be consumed by the Networking ALB root module, where environment-specific configuration, certificates, DNS records, and WAF associations are composed into complete load balancer deployments.

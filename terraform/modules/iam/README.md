@@ -1,8 +1,6 @@
-````markdown
 # 🔐 IAM Module
 
 The **IAM Module** provisions reusable AWS Identity and Access Management (IAM) resources for the CloudHustler Commerce Platform. It provides a standardized way to create IAM roles, policies, trust relationships, permission boundaries, and instance profiles while following security best practices and the principle of least privilege.
-
 
 ## 🎯 Purpose
 
@@ -35,7 +33,6 @@ It supports:
   - EC2 Instance Profiles.
   - Role attachment for EC2 instances.
 
-
 ## ✨ Features
 
 - Reusable Terraform module.
@@ -48,7 +45,6 @@ It supports:
 - Least privilege design.
 - Environment-agnostic.
 - Tag support.
-
 
 ## 🧩 Policy Management Scenarios
 
@@ -83,7 +79,6 @@ Depending on the module configuration, Terraform may provision:
 - `aws_iam_role_policy_attachment`
 - `aws_iam_instance_profile`
 
-
 ## 📂 Module Structure
 
 ```text
@@ -98,7 +93,6 @@ modules/
     ├── outputs.tf
     └── README.md
 ```
-
 
 ## 🚀 Example Usage
 
@@ -147,7 +141,6 @@ module "iam" {
 }
 ```
 
-
 ## 📥 Inputs
 
 | Name | Description |
@@ -162,7 +155,6 @@ module "iam" {
 | `create_instance_profile` | Create an EC2 instance profile |
 | `path` | IAM resource path |
 | `tags` | Resource tags |
-
 
 ## 📤 Outputs
 
@@ -186,7 +178,6 @@ The module exports the following outputs:
 - **instance_profile_arn**
   - ARN of the EC2 instance profile.
 
-
 ## 🔒 Security Best Practices
 
 This module follows AWS security best practices by:
@@ -199,8 +190,6 @@ This module follows AWS security best practices by:
 - Supporting reusable policy documents.
 - Allowing environment-specific tagging.
 - Encouraging role-based access instead of long-lived IAM users.
-
-
 
 ## 🛠️ Common Use Cases
 
@@ -217,34 +206,31 @@ This module can be used to create:
 - CodePipeline Roles
 - Cross-Account IAM Roles
 
-
-
 ## 📖 Terraform Workflow
 
 Initialize Terraform:
 
-```
+```text
 terraform init
 ```
 
 Review the execution plan:
 
-```
+```text
 terraform plan
 ```
 
 Deploy the resources:
 
-```
+```text
 terraform apply
 ```
 
 View the outputs:
 
-```
+```text
 terraform output
 ```
-
 
 ## 📌 Best Practices
 
@@ -257,7 +243,6 @@ terraform output
 - Prefer IAM Roles over IAM Users.
 - Tag IAM resources consistently across environments.
 - Reuse this module throughout the platform for standardized IAM management.
-
 
 ## 🎯 Next Steps
 
@@ -276,4 +261,3 @@ This IAM module serves as the identity foundation for the CloudHustler Commerce 
 - Application Services
 
 By centralizing IAM resource creation into a reusable module, the platform maintains consistent security, governance, and access control across all AWS environments.
-````

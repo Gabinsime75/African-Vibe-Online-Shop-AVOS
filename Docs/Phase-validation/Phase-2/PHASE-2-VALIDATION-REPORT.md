@@ -6,7 +6,7 @@ Terraform Bootstrap, Environment Model, and State Safety
 
 ## Status
 
-**PASS**
+PASS
 
 ## Scope
 

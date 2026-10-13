@@ -8,7 +8,7 @@ The module creates a **symmetric encryption key**, configures automatic key rota
 
 ---
 
-# Features
+## Features
 
 - Customer Managed Symmetric KMS Key
 - Automatic Key Rotation
@@ -21,7 +21,7 @@ The module creates a **symmetric encryption key**, configures automatic key rota
 
 ---
 
-# Resources Created
+## Resources Created
 
 This module provisions the following AWS resources:
 
@@ -31,7 +31,7 @@ This module provisions the following AWS resources:
 
 ---
 
-# Module Structure
+## Module Structure
 
 ```text
 kms/
@@ -45,7 +45,7 @@ kms/
 
 ---
 
-# Inputs
+## Inputs
 
 | Name | Description | Type | Default |
 |------|-------------|------|---------|
@@ -60,7 +60,7 @@ kms/
 
 ---
 
-# Outputs
+## Outputs
 
 | Name | Description |
 |------|-------------|
@@ -71,7 +71,7 @@ kms/
 
 ---
 
-# Example Usage
+## Example Usage
 
 ```hcl
 module "kms" {
@@ -95,7 +95,7 @@ module "kms" {
 
 ---
 
-# Security Best Practices
+## Security Best Practices
 
 This module follows AWS security best practices by:
 
@@ -109,7 +109,7 @@ This module follows AWS security best practices by:
 
 ---
 
-# Common Use Cases
+## Common Use Cases
 
 This module can be used to encrypt resources such as:
 
@@ -129,7 +129,7 @@ This module can be used to encrypt resources such as:
 
 ---
 
-# Validation
+## Validation
 
 Validate the module before deploying:
 
@@ -142,7 +142,7 @@ terraform apply
 
 ---
 
-# Future Enhancements
+## Future Enhancements
 
 Planned improvements include:
 
@@ -156,8 +156,8 @@ Planned improvements include:
 
 ---
 
-# Author
+## Author
 
-**CloudHustler Labs**
+CloudHustler Labs
 
 Building production-grade AWS, Terraform, Kubernetes, and Platform Engineering solutions.

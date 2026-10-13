@@ -10,9 +10,9 @@ This implementation is designed for the **development environment** and uses the
 
 ---
 
-# Architecture
+## Architecture
 
-```
+```text
                     Kubernetes Cluster
                            │
                            │
@@ -39,7 +39,7 @@ This implementation is designed for the **development environment** and uses the
 
 ---
 
-# Features
+## Features
 
 - Official Grafana Loki Helm Chart
 - Terraform managed deployment
@@ -55,9 +55,9 @@ This implementation is designed for the **development environment** and uses the
 
 ---
 
-# Module Structure
+## Module Structure
 
-```
+```text
 modules/loki/
 
 ├── README.md
@@ -68,11 +68,11 @@ modules/loki/
 
 ---
 
-# Deployment Mode
+## Deployment Mode
 
 This module uses:
 
-```
+```text
 deploymentMode = "SingleBinary"
 ```
 
@@ -87,7 +87,7 @@ For production environments, Loki should migrate to:
 
 ---
 
-# Storage
+## Storage
 
 Current storage backend:
 
@@ -105,9 +105,9 @@ Default configuration:
 
 ---
 
-# Log Flow
+## Log Flow
 
-```
+```text
 Application Pods
 
         │
@@ -141,7 +141,7 @@ Grafana Explore
 
 ---
 
-# Monitoring
+## Monitoring
 
 The module automatically enables:
 
@@ -154,7 +154,7 @@ Prometheus discovers Loki automatically through the ServiceMonitor.
 
 ---
 
-# Validation
+## Validation
 
 Verify the namespace:
 
@@ -170,7 +170,7 @@ kubectl get pods -n logging
 
 Expected:
 
-```
+```text
 loki-0
 loki-gateway
 loki-canary
@@ -202,7 +202,7 @@ kubectl get servicemonitor -A | grep loki
 
 ---
 
-# Terraform Outputs
+## Terraform Outputs
 
 The module exports:
 
@@ -219,7 +219,7 @@ The module exports:
 
 ---
 
-# Dependencies
+## Dependencies
 
 This module should be deployed after:
 
@@ -239,7 +239,7 @@ depends_on = [
 
 ---
 
-# Future Production Enhancements
+## Future Production Enhancements
 
 When promoting the CloudHustler Commerce Platform to production, this module should be updated to include:
 
@@ -257,27 +257,27 @@ When promoting the CloudHustler Commerce Platform to production, this module sho
 
 ---
 
-# References
+## References
 
 Grafana Loki Documentation
 
-https://grafana.com/docs/loki/
+<https://grafana.com/docs/loki/>
 
 Grafana Helm Charts
 
-https://github.com/grafana/helm-charts
+<https://github.com/grafana/helm-charts>
 
 Fluent Bit Loki Output
 
-https://docs.fluentbit.io/manual/pipeline/outputs/loki
+<https://docs.fluentbit.io/manual/pipeline/outputs/loki>
 
 Prometheus Operator
 
-https://prometheus-operator.dev/
+<https://prometheus-operator.dev/>
 
 ---
 
-# CloudHustler Commerce Platform
+## CloudHustler Commerce Platform
 
 **Project:** CloudHustler Commerce Platform
 

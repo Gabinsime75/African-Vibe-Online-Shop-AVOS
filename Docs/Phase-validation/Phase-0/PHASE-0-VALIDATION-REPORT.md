@@ -216,7 +216,6 @@ Phase 0 may be approved when:
 | Release tag | Pending |
 | Accepted exceptions | None recorded |
 
-
 ## Container validation summary
 
 All 11 AVOS business services and the supporting load generator successfully produced container images.

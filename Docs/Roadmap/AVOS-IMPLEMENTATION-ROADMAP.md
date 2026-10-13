@@ -99,13 +99,13 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 
 ---
 
-# Phase 0 — Baseline Preservation and Architecture Gap Analysis
+## Phase 0 — Baseline Preservation and Architecture Gap Analysis
 
 **Role:** Freeze the inherited baseline, record evidence, and prevent the redesign from erasing useful history or misrepresenting implementation status.
 
 **Dependencies:** Approved AVOS application and project architecture diagrams.
 
-## Steps
+### Steps
 
 | Step | Implementation | Short role | Output |
 |---|---|---|---|
@@ -116,7 +116,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 | 0.5 | Create architecture decision records for the approved major choices. | Preserves the reasoning behind technologies and boundaries. | Initial ADR set. |
 | 0.6 | Capture repository and optional runtime evidence without changing infrastructure. | Provides an audit trail for later validation and interviews. | Evidence archive. |
 
-## Tools and resources
+### Tools and resources
 
 | Tool/resource | Short role |
 |---|---|
@@ -125,14 +125,14 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 | ADRs | Record important architectural decisions and rejected alternatives. |
 | Architecture diagrams | Define the target against which gaps are measured. |
 
-## Validation gate
+### Validation gate
 
 - The baseline tag resolves to the imported source commit.
 - Every approved architecture component has a baseline status and disposition.
 - No infrastructure or application behavior changes occur during this phase.
 - The gap register is reviewed before Phase 1 begins.
 
-## Deliverables
+### Deliverables
 
 - Baseline inventory
 - Keep/Modify/Replace/Add/Remove matrix
@@ -140,12 +140,12 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 - Initial ADRs
 - Baseline evidence index
 
-## Cleanup and cost control
+### Cleanup and cost control
 
 - Do not deploy AWS resources during discovery.
 - Store evidence without secrets, Terraform state, tokens, or kubeconfig files.
 
-## Five senior-level explanations
+### Five senior-level explanations
 
 1. **Why preserve the baseline?** A redesign needs a verifiable starting point so regressions and improvements can be measured rather than assumed.
 2. **Why classify components first?** Classification reduces unnecessary rewrites and focuses engineering effort on gaps that materially affect the target architecture.
@@ -155,13 +155,13 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 
 ---
 
-# Phase 1 — Repository Rebrand, Hygiene, and Engineering Standards
+## Phase 1 — Repository Rebrand, Hygiene, and Engineering Standards
 
 **Role:** Establish a clean AVOS identity and enforce repository controls before new implementation begins.
 
 **Dependencies:** Phase 0 baseline and gap register approved.
 
-## Steps
+### Steps
 
 | Step | Implementation | Short role | Output |
 |---|---|---|---|
@@ -174,7 +174,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 | 1.7 | Establish CODEOWNERS and branch-protection expectations. | Makes review and ownership explicit. | Ownership policy. |
 | 1.8 | Create documentation indexes for architecture, roadmap, ADRs, runbooks, validation, and troubleshooting. | Makes project evidence discoverable. | Documentation navigation. |
 
-## Tools and resources
+### Tools and resources
 
 | Tool/resource | Short role |
 |---|---|
@@ -184,7 +184,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 | Gitleaks or equivalent secret scanner | Detects accidentally committed credentials and tokens. |
 | Markdown linting | Keeps documentation consistent and readable. |
 
-## Validation gate
+### Validation gate
 
 - No tracked Terraform state, secret, kubeconfig, compiled test binary, or temporary file remains.
 - Required upstream licenses remain intact.
@@ -192,7 +192,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 - The root README links to the approved diagrams and roadmap.
 - Pull-request checks enforce formatting and secret scanning.
 
-## Deliverables
+### Deliverables
 
 - Root README
 - Rebranding report
@@ -201,12 +201,12 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 - Documentation index
 - Repository hygiene validation record
 
-## Cleanup and cost control
+### Cleanup and cost control
 
 - This phase must not provision infrastructure.
 - Remove stale artifacts through version-controlled commits so changes remain reviewable.
 
-## Five senior-level explanations
+### Five senior-level explanations
 
 1. **Why rebrand before feature work?** Identity changes touch source, infrastructure names, URLs, images, and documentation; doing them early avoids repeated churn.
 2. **Why preserve license headers?** Product branding can change without removing the legal obligations attached to inherited source code.
@@ -216,13 +216,13 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 
 ---
 
-# Phase 2 — Terraform Bootstrap, Environment Model, and State Safety
+## Phase 2 — Terraform Bootstrap, Environment Model, and State Safety
 
 **Role:** Create repeatable Terraform roots and protected state before provisioning AVOS environments.
 
 **Dependencies:** Repository standards from Phase 1.
 
-## Steps
+### Steps
 
 | Step | Implementation | Short role | Output |
 |---|---|---|---|
@@ -235,7 +235,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 | 2.7 | Add validation, formatting, linting, and plan checks. | Detects configuration defects before apply. | Terraform quality workflow. |
 | 2.8 | Document bootstrap recovery and state-migration procedures. | Makes state restoration safe and repeatable. | Bootstrap runbook. |
 
-## Tools and resources
+### Tools and resources
 
 | Tool/resource | Short role |
 |---|---|
@@ -246,7 +246,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 | `terraform fmt`, `validate`, and plan | Enforce syntax, consistency, and change review. |
 | TFLint and Checkov/tfsec | Detect quality, security, and policy issues before deployment. |
 
-## Validation gate
+### Validation gate
 
 - A clean bootstrap plan succeeds for each intended environment boundary.
 - State encryption, versioning, public-access blocking, and least-privilege policies validate.
@@ -254,7 +254,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 - No backend credentials or state files exist in Git.
 - Recovery steps are tested in a non-production sandbox.
 
-## Deliverables
+### Deliverables
 
 - Environment model ADR
 - Bootstrap Terraform root
@@ -262,12 +262,12 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 - Terraform standards document
 - Bootstrap recovery runbook
 
-## Cleanup and cost control
+### Cleanup and cost control
 
 - Retain only required state versions according to lifecycle policy.
 - Destroy temporary recovery-test resources after validation.
 
-## Five senior-level explanations
+### Five senior-level explanations
 
 1. **Why isolate bootstrap state?** The resources that protect Terraform state cannot safely depend on the same state they are protecting.
 2. **Why version state objects?** Versioning provides a recovery path from accidental overwrite or a faulty migration.
@@ -277,13 +277,13 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 
 ---
 
-# Phase 3 — Organizations, Governance, Human Access, and Audit
+## Phase 3 — Organizations, Governance, Human Access, and Audit
 
 **Role:** Establish preventive, detective, identity, and audit controls before application infrastructure expands.
 
 **Dependencies:** Phase 2 state and environment model.
 
-## Steps
+### Steps
 
 | Step | Implementation | Short role | Output |
 |---|---|---|---|
@@ -296,7 +296,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 | 3.7 | Enable GuardDuty, Security Hub, Access Analyzer, and Detective. | Detects threats, centralizes findings, exposes unintended access, and supports investigations. | Security detection baseline. |
 | 3.8 | Define findings ownership, severity, response SLAs, and evidence retention. | Converts security services into an operating process. | Governance runbook. |
 
-## Tools and resources
+### Tools and resources
 
 | Tool/resource | Short role |
 |---|---|
@@ -312,7 +312,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 | Access Analyzer | Identifies external or unintended resource access. |
 | Detective | Correlates evidence during security investigations. |
 
-## Validation gate
+### Validation gate
 
 - Permission sets and EKS RBAC pass positive and negative access tests.
 - SCPs deny prohibited actions without blocking approved deployment workflows.
@@ -320,7 +320,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 - Config aggregation and representative compliance rules report correctly.
 - GuardDuty and Security Hub sample findings reach the assigned response path.
 
-## Deliverables
+### Deliverables
 
 - Organization and access diagrams
 - Permission-set and RBAC matrix
@@ -328,12 +328,12 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 - Governance Terraform outputs
 - Security findings and audit runbook
 
-## Cleanup and cost control
+### Cleanup and cost control
 
 - Set intentional log-retention periods instead of unlimited defaults.
 - Remove temporary users, policies, sample findings, and test roles after validation.
 
-## Five senior-level explanations
+### Five senior-level explanations
 
 1. **Why combine Identity Center with EKS RBAC?** Authentication proves who the operator is; RBAC separately limits what that identity can do inside Kubernetes.
 2. **Why do SCPs not replace IAM?** SCPs define permission ceilings, while IAM policies and roles grant the permissions workloads and people actually use.
@@ -343,13 +343,13 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 
 ---
 
-# Phase 4 — Networking, Edge Security, TLS, and Customer Identity
+## Phase 4 — Networking, Edge Security, TLS, and Customer Identity
 
 **Role:** Build the private Multi-AZ network and the approved customer request path from DNS to the EKS ingress boundary.
 
 **Dependencies:** Phases 2–3; approved domain and environment names.
 
-## Steps
+### Steps
 
 | Step | Implementation | Short role | Output |
 |---|---|---|---|
@@ -366,7 +366,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 | 4.11 | Define JWT validation and authorization placement at the frontend/Istio boundary. | Ensures protected requests are authenticated before business processing. | Authentication design. |
 | 4.12 | Validate the request path without exposing private nodes or services. | Proves the edge design and network boundary. | End-to-end edge evidence. |
 
-## Tools and resources
+### Tools and resources
 
 | Tool/resource | Short role |
 |---|---|
@@ -383,7 +383,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 | ALB | Routes HTTPS traffic to the Istio ingress gateway. |
 | Amazon Cognito | Manages customer identities and OIDC/JWT authentication. |
 
-## Validation gate
+### Validation gate
 
 - Subnet routing and security-group reachability match the approved data flows.
 - Each AZ has an independent approved egress path or a documented lower-cost deviation.
@@ -393,7 +393,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 - An authenticated customer reaches a protected route and an invalid token is denied.
 - Direct public access to nodes, databases, and internal services fails.
 
-## Deliverables
+### Deliverables
 
 - Network and edge Terraform
 - CIDR, subnet, route, and security-group matrix
@@ -401,13 +401,13 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 - Cognito configuration and authentication flow
 - Edge troubleshooting and rollback runbook
 
-## Cleanup and cost control
+### Cleanup and cost control
 
 - Use lifecycle and retention policies for WAF, CloudFront, and Flow Log storage.
 - Remove test domains, certificates, WAF rules, and temporary endpoints.
 - Document the high availability versus cost tradeoff of NAT gateways per AZ.
 
-## Five senior-level explanations
+### Five senior-level explanations
 
 1. **Why separate subnet tiers?** Tiered subnets reduce exposure and allow routing and security controls to match workload sensitivity.
 2. **Why place CloudFront and WAF before ALB?** Edge filtering and caching reduce origin load while blocking malicious traffic earlier.
@@ -417,13 +417,13 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 
 ---
 
-# Phase 5 — EKS Compute, Storage, and Managed Data Foundation
+## Phase 5 — EKS Compute, Storage, and Managed Data Foundation
 
 **Role:** Provide resilient Kubernetes capacity and private managed data services before deploying AVOS business workloads.
 
 **Dependencies:** Phase 4 networking; Phase 3 identity and KMS controls.
 
-## Steps
+### Steps
 
 | Step | Implementation | Short role | Output |
 |---|---|---|---|
@@ -439,7 +439,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 | 5.10 | Configure Secrets Manager records, security groups, subnet groups, encryption, backups, and maintenance windows. | Secures and operationalizes database access. | Managed data controls. |
 | 5.11 | Define database migration ownership and connectivity tests. | Makes schema changes repeatable and service ownership explicit. | Migration workflow. |
 
-## Tools and resources
+### Tools and resources
 
 | Tool/resource | Short role |
 |---|---|
@@ -453,7 +453,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 | ElastiCache for Redis | Stores low-latency cart state. |
 | AWS Secrets Manager | Stores database credentials and application secrets. |
 
-## Validation gate
+### Validation gate
 
 - Cluster nodes span approved Availability Zones and private subnets.
 - System workloads remain schedulable when Karpenter capacity scales down.
@@ -464,7 +464,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 - Redis write/read, failover, encryption, and authentication validate.
 - No database endpoint is publicly reachable.
 
-## Deliverables
+### Deliverables
 
 - EKS and managed-data Terraform
 - Capacity and scaling policy
@@ -472,14 +472,14 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 - Backup/restore evidence
 - EKS, Aurora, and Redis operational runbooks
 
-## Cleanup and cost control
+### Cleanup and cost control
 
 - Keep the managed node group at the smallest safe baseline and cap Karpenter NodePool resources.
 - Use scheduled non-production scaling or hibernation procedures where technically safe.
 - Select Aurora and Redis sizes from measured demand and enable cost alarms.
 - Delete load-test databases, snapshots, and unused volumes after evidence is captured.
 
-## Five senior-level explanations
+### Five senior-level explanations
 
 1. **Why retain a managed node group with Karpenter?** Stable baseline nodes protect critical controllers while Karpenter handles elastic application capacity.
 2. **Why replace the Redis pod?** A pod-scoped datastore couples cart durability to cluster events; managed Redis provides stronger availability, backup, and maintenance controls.
@@ -489,13 +489,13 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 
 ---
 
-# Phase 6 — Platform Controllers, Secrets, and Istio Gateway API
+## Phase 6 — Platform Controllers, Secrets, and Istio Gateway API
 
 **Role:** Install the Kubernetes control services required for secure ingress, DNS, certificates, secrets, scaling, and service-mesh behavior.
 
 **Dependencies:** Phase 5 EKS capacity; Phase 4 ALB, DNS, and certificates.
 
-## Steps
+### Steps
 
 | Step | Implementation | Short role | Output |
 |---|---|---|---|
@@ -510,7 +510,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 | 6.9 | Apply PodDisruptionBudgets, topology spread, probes, and priority classes to critical controllers. | Protects the platform during upgrades and node disruption. | Controller resilience policies. |
 | 6.10 | Validate controller ownership and remove duplicate or legacy ingress controllers. | Prevents resource conflicts and ambiguous traffic ownership. | Single ingress control model. |
 
-## Tools and resources
+### Tools and resources
 
 | Tool/resource | Short role |
 |---|---|
@@ -523,7 +523,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 | HTTPRoute | Maps hostnames and paths to Kubernetes Services. |
 | PodDisruptionBudget | Maintains minimum availability during voluntary disruptions. |
 
-## Validation gate
+### Validation gate
 
 - Every controller uses a dedicated service account and least-privilege AWS identity where required.
 - Route 53, secret synchronization, and certificate renewal tests succeed.
@@ -532,7 +532,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 - Mesh mTLS and authorization tests allow intended traffic and deny unintended traffic.
 - Controller disruption tests preserve the minimum required availability.
 
-## Deliverables
+### Deliverables
 
 - Platform-controller Terraform and values
 - Gateway API manifests
@@ -541,12 +541,12 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 - Edge-to-service validation evidence
 - Platform-services troubleshooting runbook
 
-## Cleanup and cost control
+### Cleanup and cost control
 
 - Remove legacy ingress controllers, unused load balancers, duplicate target groups, and stale DNS records.
 - Set controller replica counts appropriate to each environment.
 
-## Five senior-level explanations
+### Five senior-level explanations
 
 1. **Why use Gateway API with Istio?** Gateway API separates portable routing intent from the implementation while retaining Istio’s mesh capabilities.
 2. **Why remove duplicate ingress controllers?** Multiple controllers can race to own the same resources, increase cost, and complicate incident diagnosis.
@@ -556,13 +556,13 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 
 ---
 
-# Phase 7 — CI, Software Supply Chain, and ECR Publication
+## Phase 7 — CI, Software Supply Chain, and ECR Publication
 
 **Role:** Build a secure, reusable CI system that publishes immutable artifacts without deploying or changing GitOps manifests.
 
 **Dependencies:** Phase 1 repository controls; Phase 3 IAM/OIDC; ECR repositories available.
 
-## Steps
+### Steps
 
 | Step | Implementation | Short role | Output |
 |---|---|---|---|
@@ -580,7 +580,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 | 7.12 | Add protected environment approvals for sensitive CI operations. | Requires authorized review for production-scoped actions. | GitHub environment controls. |
 | 7.13 | Publish logs, test reports, scan reports, SBOMs, and digests as workflow evidence. | Makes each artifact independently auditable. | CI evidence bundle. |
 
-## Tools and resources
+### Tools and resources
 
 | Tool/resource | Short role |
 |---|---|
@@ -592,7 +592,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 | Image signing | Verifies artifact integrity and build provenance. |
 | Protobuf compatibility checks | Protect gRPC clients from breaking schema changes. |
 
-## Validation gate
+### Validation gate
 
 - All 11 business services and `loadgenerator` execute the reusable CI path.
 - A pull request cannot publish an untested or critically vulnerable image under the approved policy.
@@ -601,7 +601,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 - Image digest, source commit, SBOM, scan, and provenance can be correlated.
 - CI contains no GitOps write-back and no cluster deployment command.
 
-## Deliverables
+### Deliverables
 
 - Reusable workflow and service callers
 - CI coverage matrix
@@ -609,13 +609,13 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 - Security and supply-chain evidence
 - CI troubleshooting runbook
 
-## Cleanup and cost control
+### Cleanup and cost control
 
 - Apply ECR lifecycle policies to unreferenced development images while preserving promoted releases.
 - Use dependency and build caching with bounded retention.
 - Delete failed experimental repositories after migration evidence is captured.
 
-## Five senior-level explanations
+### Five senior-level explanations
 
 1. **Why build once?** Promoting the same digest across environments avoids rebuilding different artifacts from nominally identical source.
 2. **Why stop CI at ECR?** CI proves and publishes the artifact, while GitOps independently controls when desired state changes reach a cluster.
@@ -625,13 +625,13 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 
 ---
 
-# Phase 8 — GitOps, Image Updater, Environment Promotion, and Rollback
+## Phase 8 — GitOps, Image Updater, Environment Promotion, and Rollback
 
 **Role:** Make Git the auditable desired-state authority and automate image promotion without giving CI deployment privileges.
 
 **Dependencies:** Phases 6–7; complete service manifests; protected Git branches.
 
-## Steps
+### Steps
 
 | Step | Implementation | Short role | Output |
 |---|---|---|---|
@@ -648,7 +648,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 | 8.11 | Test rollback by reverting the Git image change to a known-good digest. | Proves recovery without bypassing GitOps. | Rollback evidence. |
 | 8.12 | Restrict Argo CD and Image Updater permissions to required namespaces, repositories, and registries. | Limits GitOps control-plane blast radius. | Least-privilege GitOps. |
 
-## Tools and resources
+### Tools and resources
 
 | Tool/resource | Short role |
 |---|---|
@@ -659,7 +659,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 | GitHub App | Provides scoped, auditable Git write-back credentials. |
 | Sync waves | Order dependent Kubernetes resources during reconciliation. |
 
-## Validation gate
+### Validation gate
 
 - ECR image publication alone does not change the cluster until Git desired state changes.
 - Image Updater creates the expected development commit or protected-environment PR.
@@ -668,7 +668,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 - A Git revert returns the application to the known-good image digest.
 - CI has no Kubernetes credentials and Argo CD does not build images.
 
-## Deliverables
+### Deliverables
 
 - Complete GitOps bases and overlays
 - Argo CD project/application model
@@ -676,12 +676,12 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 - Promotion and rollback evidence
 - GitOps operations runbook
 
-## Cleanup and cost control
+### Cleanup and cost control
 
 - Remove obsolete Argo CD applications, Redis pod manifests, and legacy Istio routing after replacement validation.
 - Avoid duplicate controllers across namespaces or Terraform states.
 
-## Five senior-level explanations
+### Five senior-level explanations
 
 1. **Why make Image Updater the only tag writer?** A single owner prevents competing commits, nondeterministic promotion, and unclear audit trails.
 2. **Why use Git write-back?** The selected image remains durable, reviewable, and reproducible from Git rather than existing only as cluster state.
@@ -691,13 +691,13 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 
 ---
 
-# Phase 9 — AVOS Microservices Modernization and gRPC Integration
+## Phase 9 — AVOS Microservices Modernization and gRPC Integration
 
 **Role:** Deploy the complete AVOS application, standardize internal contracts, and replace inherited dependencies that conflict with the target architecture.
 
 **Dependencies:** Phases 5–8; Aurora, Redis, secrets, CI, and GitOps operational.
 
-## Service implementation matrix
+### Service implementation matrix
 
 | Service | Language | Disposition | Short role |
 |---|---|---|---|
@@ -714,7 +714,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 | `shoppingassistantservice` | Python | Replace | Provides AWS-native AI-assisted product discovery through gRPC. |
 | `loadgenerator` | Python/Locust | Keep/Modify | Generates realistic test traffic and is not counted as a business microservice. |
 
-## Steps
+### Steps
 
 | Step | Implementation | Short role | Output |
 |---|---|---|---|
@@ -732,7 +732,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 | 9.12 | Add NetworkPolicies and Istio AuthorizationPolicies. | Restricts service communication to approved dependencies. | Service access controls. |
 | 9.13 | Run unit, contract, integration, checkout, failure-injection, and load tests. | Proves service behavior and dependency handling. | Application validation evidence. |
 
-## Tools and resources
+### Tools and resources
 
 | Tool/resource | Short role |
 |---|---|
@@ -745,7 +745,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 | Bedrock and OpenSearch | Power the AWS-native shopping assistant. |
 | Locust | Generates realistic customer behavior for validation. |
 
-## Validation gate
+### Validation gate
 
 - All 11 business services are Synced, Healthy, ready, and reachable only through intended paths.
 - The complete browse, cart, checkout, payment, shipping, recommendation, ad, email, and assistant journeys succeed.
@@ -755,7 +755,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 - Network and authorization policy negative tests deny unauthorized service calls.
 - Load generation causes expected HPA/Karpenter behavior without unacceptable errors.
 
-## Deliverables
+### Deliverables
 
 - AVOS-branded application
 - Authoritative protobuf contracts
@@ -765,13 +765,13 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 - Application dependency and failure matrix
 - End-to-end test evidence
 
-## Cleanup and cost control
+### Cleanup and cost control
 
 - Remove Google SDKs, credentials, AlloyDB references, obsolete embeddings, and unused packages.
 - Run load generation only during controlled test windows.
 - Right-size requests, limits, HPA targets, and Karpenter capacity from measured results.
 
-## Five senior-level explanations
+### Five senior-level explanations
 
 1. **Why keep gRPC internal and HTTPS external?** Each protocol serves a different trust boundary and client type without forcing browsers to communicate like internal services.
 2. **Why centralize protobuf ownership?** Shared contracts prevent independent generated copies from drifting across languages.
@@ -781,13 +781,13 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 
 ---
 
-# Phase 10 — Observability, SLOs, Alerting, and Incident Response
+## Phase 10 — Observability, SLOs, Alerting, and Incident Response
 
 **Role:** Turn metrics, logs, traces, deployment state, and AWS health into actionable operational signals and response procedures.
 
 **Dependencies:** Phase 9 service instrumentation; Phase 6 platform services.
 
-## Steps
+### Steps
 
 | Step | Implementation | Short role | Output |
 |---|---|---|---|
@@ -804,7 +804,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 | 10.11 | Attach owner, severity, dashboard, trace, and runbook metadata to alerts. | Makes notifications actionable instead of merely informative. | Enriched alerts. |
 | 10.12 | Conduct incident exercises and blameless postmortems. | Validates detection, response, learning, and corrective-action tracking. | Incident evidence. |
 
-## Tools and resources
+### Tools and resources
 
 | Tool/resource | Short role |
 |---|---|
@@ -819,7 +819,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 | CloudWatch | Monitors AWS services and infrastructure signals. |
 | Amazon SNS | Fans out severity-based incident notifications. |
 
-## Validation gate
+### Validation gate
 
 - Each critical customer journey has defined SLI, SLO, dashboard, owner, and alert.
 - A request can be correlated across metrics, logs, and traces using shared context.
@@ -828,7 +828,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 - Runbook, dashboard, and trace links in alerts resolve successfully.
 - The incident exercise produces a postmortem and tracked corrective actions.
 
-## Deliverables
+### Deliverables
 
 - SLI/SLO catalog
 - Dashboard and alert catalog
@@ -836,13 +836,13 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 - Incident response runbook
 - Exercise and postmortem evidence
 
-## Cleanup and cost control
+### Cleanup and cost control
 
 - Set log, metric, and trace retention based on operational value.
 - Use sampling, filtering, cardinality controls, and bounded dashboard queries.
 - Remove noisy alerts rather than teaching responders to ignore them.
 
-## Five senior-level explanations
+### Five senior-level explanations
 
 1. **Why define SLOs before alerts?** Alerts should indicate threatened user outcomes, not merely that a metric changed.
 2. **Why keep Loki and add OpenSearch?** Loki remains the Kubernetes logging platform, while OpenSearch serves operational search and vector retrieval use cases.
@@ -852,13 +852,13 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 
 ---
 
-# Phase 11 — Streaming Data Lake, Business Analytics, and Visualization
+## Phase 11 — Streaming Data Lake, Business Analytics, and Visualization
 
 **Role:** Convert AVOS business events into governed historical data, SQL analysis, dashboards, and machine-learning inputs.
 
 **Dependencies:** Phase 9 event definitions; Phase 3 governance; Phase 10 telemetry boundaries.
 
-## Steps
+### Steps
 
 | Step | Implementation | Short role | Output |
 |---|---|---|---|
@@ -875,7 +875,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 | 11.11 | Define data retention, access, masking, quality, and deletion rules. | Protects customer data and controls analytical cost. | Data governance policy. |
 | 11.12 | Export approved features or datasets for SageMaker use. | Supplies reproducible inputs for anomaly and predictive models. | ML-ready datasets. |
 
-## Tools and resources
+### Tools and resources
 
 | Tool/resource | Short role |
 |---|---|
@@ -889,7 +889,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 | Amazon QuickSight | Visualizes authorized analytical results. |
 | OpenSearch operational collection | Supports near-real-time event and operational search. |
 
-## Validation gate
+### Validation gate
 
 - Event publication failure cannot block customer checkout.
 - Kinesis retains and replays test events according to policy.
@@ -899,7 +899,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 - Athena queries return reconciled totals within scan-cost limits.
 - QuickSight access and dashboards match authorized user roles.
 
-## Deliverables
+### Deliverables
 
 - Event schema catalog
 - Streaming and data-lake Terraform
@@ -908,14 +908,14 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 - QuickSight dashboard definitions
 - Data governance and cost runbook
 
-## Cleanup and cost control
+### Cleanup and cost control
 
 - Partition and compress data to reduce Athena scan volume.
 - Apply S3 lifecycle transitions and deletion rules by data class.
 - Set Kinesis retention and shard/on-demand choices from measured traffic.
 - Shut down test delivery streams, crawlers, and dashboards after validation where appropriate.
 
-## Five senior-level explanations
+### Five senior-level explanations
 
 1. **Why decouple analytics from checkout?** Customer transactions must succeed even if the analytical pipeline is degraded.
 2. **Why use S3 as the system of record?** Durable raw data allows new transformations and models without requiring producers to replay historical behavior.
@@ -925,13 +925,13 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 
 ---
 
-# Phase 12 — AI-Assisted Operations and Human-Approved Remediation
+## Phase 12 — AI-Assisted Operations and Human-Approved Remediation
 
 **Role:** Use reliable telemetry and runbooks to generate evidence-based incident recommendations and execute only approved, allow-listed actions.
 
 **Dependencies:** Phases 3, 10, and 11; mature runbooks and incident ownership.
 
-## Steps
+### Steps
 
 | Step | Implementation | Short role | Output |
 |---|---|---|---|
@@ -949,7 +949,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 | 12.12 | Record prompts, evidence references, recommendations, approval, execution, and outcomes in CloudTrail/CloudWatch/S3. | Creates an auditable decision and execution history. | AIOps audit trail. |
 | 12.13 | Test false positives, missing evidence, model failure, denied approval, failed remediation, and rollback. | Proves the system fails safely. | Safety validation. |
 
-## Tools and resources
+### Tools and resources
 
 | Tool/resource | Short role |
 |---|---|
@@ -965,7 +965,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 | SSM Automation | Executes predefined, auditable remediation steps. |
 | CloudTrail, CloudWatch, and S3 | Preserve execution, telemetry, and decision evidence. |
 
-## Validation gate
+### Validation gate
 
 - Bedrock responses cite retrieved AVOS evidence rather than unsupported general statements.
 - SageMaker anomaly evaluation meets the approved quality threshold before operational use.
@@ -975,7 +975,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 - Failed remediation stops safely, alerts responders, and preserves evidence.
 - All recommendation and execution events are auditable end to end.
 
-## Deliverables
+### Deliverables
 
 - AIOps use-case and threat model
 - OpenSearch collection design
@@ -986,14 +986,14 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 - SSM Automation catalog
 - Safety and audit evidence
 
-## Cleanup and cost control
+### Cleanup and cost control
 
 - Use the smallest appropriate OpenSearch capacity and retention for each collection.
 - Invoke Bedrock and SageMaker only for qualified incidents or scheduled analysis.
 - Delete obsolete model endpoints, test indexes, duplicate embeddings, and temporary datasets.
 - Set budgets and anomaly alerts for AI, search, and analytics services.
 
-## Five senior-level explanations
+### Five senior-level explanations
 
 1. **Why implement AIOps after observability?** AI cannot compensate for missing or unreliable telemetry and runbooks.
 2. **Why separate SageMaker from Bedrock?** SageMaker supplies quantitative predictive signals; Bedrock synthesizes evidence into a human-readable operational recommendation.
@@ -1003,13 +1003,13 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 
 ---
 
-# Phase 13 — Reliability, Performance, Security, and Failure Validation
+## Phase 13 — Reliability, Performance, Security, and Failure Validation
 
 **Role:** Demonstrate that AVOS meets measurable reliability, scalability, security, and recovery objectives under normal and degraded conditions.
 
 **Dependencies:** Phases 9–12 operational in the target test environment.
 
-## Steps
+### Steps
 
 | Step | Implementation | Short role | Output |
 |---|---|---|---|
@@ -1024,7 +1024,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 | 13.9 | Conduct a complete incident exercise from alert through approved SSM remediation. | Validates the operational and AIOps response chain. | Game-day report. |
 | 13.10 | Resolve critical findings and record accepted residual risks. | Prevents unresolved material risk from being hidden at sign-off. | Risk register. |
 
-## Tools and resources
+### Tools and resources
 
 | Tool/resource | Short role |
 |---|---|
@@ -1035,7 +1035,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 | AWS backup and restore mechanisms | Recover managed data and configuration state. |
 | SLO/error-budget reporting | Determines whether reliability is acceptable for release. |
 
-## Validation gate
+### Validation gate
 
 - Performance thresholds are met at defined normal and peak load.
 - Scaling remains within cost and safety ceilings.
@@ -1044,7 +1044,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 - No unresolved critical vulnerability or public exposure remains.
 - The end-to-end incident exercise completes with an auditable timeline.
 
-## Deliverables
+### Deliverables
 
 - Performance and scalability report
 - Resilience and recovery report
@@ -1053,12 +1053,12 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 - Residual-risk register
 - Release recommendation
 
-## Cleanup and cost control
+### Cleanup and cost control
 
 - Run high-cost tests in scheduled windows and tear down temporary capacity immediately afterward.
 - Delete unused snapshots, load-test data, temporary dashboards, and diagnostic indexes after retention requirements are met.
 
-## Five senior-level explanations
+### Five senior-level explanations
 
 1. **Why test failure instead of only success?** Production reliability depends on controlled degradation and recovery, not the happy path alone.
 2. **Why evaluate HPA and Karpenter together?** Pod scaling creates compute demand and node scaling satisfies it; testing one alone misses their interaction.
@@ -1068,13 +1068,13 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 
 ---
 
-# Phase 14 — Promotion, Cost Controls, Teardown, Recovery, and Final Sign-Off
+## Phase 14 — Promotion, Cost Controls, Teardown, Recovery, and Final Sign-Off
 
 **Role:** Make AVOS repeatable, supportable, cost-controlled, recoverable, and defensible as a production-grade portfolio project.
 
 **Dependencies:** Phase 13 release recommendation and resolved blockers.
 
-## Steps
+### Steps
 
 | Step | Implementation | Short role | Output |
 |---|---|---|---|
@@ -1089,7 +1089,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 | 14.9 | Create demo script, interview narrative, and five major tradeoff stories. | Converts implementation experience into concise senior-level communication. | Portfolio presentation material. |
 | 14.10 | Conduct formal architecture, security, operations, cost, and documentation sign-off. | Establishes the approved final project state. | AVOS release record. |
 
-## Tools and resources
+### Tools and resources
 
 | Tool/resource | Short role |
 |---|---|
@@ -1100,7 +1100,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 | Teardown/restoration runbooks | Control cost while preserving a safe resumption path. |
 | Evidence index | Links claims to commands, screenshots, logs, and validation records. |
 
-## Validation gate
+### Validation gate
 
 - Staging and production reference the same approved image digest.
 - Rollback criteria and a known-good release are documented.
@@ -1109,7 +1109,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 - Documentation accurately distinguishes implemented, deployed, validated, and planned capabilities.
 - Architecture, security, operations, cost, and documentation owners approve release.
 
-## Deliverables
+### Deliverables
 
 - Environment promotion record
 - Production release and rollback policy
@@ -1119,7 +1119,7 @@ The schedule is an aggressive portfolio delivery target. Security, documentation
 - Final validation and sign-off document
 - Demo and interview package
 
-## Cleanup and cost control
+### Cleanup and cost control
 
 Recommended teardown order:
 
@@ -1142,7 +1142,7 @@ Recommended restoration order:
 7. Analytics, SageMaker, Bedrock, OpenSearch, and remediation automation.
 8. Load tests, final health checks, and customer-flow validation.
 
-## Five senior-level explanations
+### Five senior-level explanations
 
 1. **Why promote digests rather than rebuild?** Digest promotion proves that the tested artifact is exactly the artifact deployed to the next environment.
 2. **Why treat teardown as an engineered workflow?** Unordered destruction can strand dependencies, lose evidence, and make restoration more expensive than leaving resources running.
@@ -1152,7 +1152,7 @@ Recommended restoration order:
 
 ---
 
-# Target Repository Structure
+## Target Repository Structure
 
 ```text
 African-Vibe-Online-Shop-AVOS/
@@ -1257,7 +1257,7 @@ African-Vibe-Online-Shop-AVOS/
 └── README.md
 ```
 
-## Repository structure rules
+### Repository structure rules
 
 - `src/` owns executable application components.
 - `api/proto/` owns shared gRPC contracts and generated-code policy.
@@ -1269,7 +1269,7 @@ African-Vibe-Online-Shop-AVOS/
 - `docs/` owns architecture, decisions, runbooks, evidence, and interview material.
 - Generated binaries, Terraform state, credentials, build output, and local kubeconfigs must never be committed.
 
-# Global Definition of Done
+## Global Definition of Done
 
 AVOS is complete only when all of the following are true:
 
@@ -1288,7 +1288,7 @@ AVOS is complete only when all of the following are true:
 - Cost ownership, budgets, retention, and shutdown procedures are documented.
 - Final documentation distinguishes present, validated, deployed, and planned capabilities without unsupported claims.
 
-# Phase Sign-Off Template
+## Phase Sign-Off Template
 
 Use this checklist at the end of every phase:
 

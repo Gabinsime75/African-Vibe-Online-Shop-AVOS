@@ -4,7 +4,6 @@ The **CloudTrail Service Role Module** provisions the IAM role required by AWS C
 
 This module leverages the reusable IAM module to create a standardized service role that CloudTrail can assume for delivering logs and interacting with AWS services.
 
-
 ## 🎯 Purpose
 
 This module creates:
@@ -15,13 +14,11 @@ This module creates:
 - IAM policy attachment
 - Outputs for downstream Terraform modules
 
-
 ## 📦 Resources Created
 
 - IAM Role
 - IAM Policy
 - IAM Role Policy Attachment
-
 
 ## 📥 Inputs
 
@@ -30,14 +27,12 @@ This module creates:
 | role_name | IAM role name | string | CloudHustler-CloudTrail-Service-Role |
 | tags | Resource tags | map(string) | {} |
 
-
 ## 📤 Outputs
 
 | Name | Description |
 |------|-------------|
 | role_name | IAM role name |
 | role_arn | IAM role ARN |
-
 
 ## 💡 Example Usage
 
@@ -55,7 +50,6 @@ module "cloudtrail_service_role" {
 
 }
 ```
-
 
 ## 🔒 Best Practices
 

@@ -2,7 +2,7 @@
 
 ---
 
-# 🚀 Overview
+## 🚀 Overview
 
 This module deploys **ExternalDNS** into an Amazon EKS cluster using the official Helm chart and integrates it with **Amazon Route 53** using **EKS Pod Identity**.
 
@@ -12,7 +12,7 @@ This module is production-ready and designed for multi-environment deployments a
 
 ---
 
-# 🎯 Purpose
+## 🎯 Purpose
 
 This module automates DNS management by:
 
@@ -27,7 +27,7 @@ This module automates DNS management by:
 
 ---
 
-# 🏗 Architecture
+## 🏗 Architecture
 
 ```text
                    +---------------------------+
@@ -61,7 +61,7 @@ This module automates DNS management by:
 
 ---
 
-# 🚀 Features
+## 🚀 Features
 
 - Official ExternalDNS Helm Chart
 - Amazon Route53 Provider
@@ -79,16 +79,16 @@ This module automates DNS management by:
 
 ---
 
-# 📦 Resources Created
+## 📦 Resources Created
 
-## AWS
+### AWS
 
 - IAM Role
 - IAM Policy
 - IAM Policy Attachment
 - EKS Pod Identity Association
 
-## Kubernetes
+### Kubernetes
 
 - Namespace
 - ServiceAccount
@@ -96,7 +96,7 @@ This module automates DNS management by:
 
 ---
 
-# 📁 Module Structure
+## 📁 Module Structure
 
 ```text
 modules/
@@ -111,7 +111,7 @@ modules/
 
 ---
 
-# 📥 Inputs
+## 📥 Inputs
 
 | Name | Description |
 |------|-------------|
@@ -130,7 +130,7 @@ modules/
 
 ---
 
-# 📤 Outputs
+## 📤 Outputs
 
 | Output | Description |
 |---------|-------------|
@@ -144,7 +144,7 @@ modules/
 
 ---
 
-# 💻 Example Usage
+## 💻 Example Usage
 
 ```hcl
 module "external_dns" {
@@ -171,7 +171,7 @@ module "external_dns" {
 
 ---
 
-# 🔒 Security Considerations
+## 🔒 Security Considerations
 
 - Uses EKS Pod Identity (no long-lived AWS credentials)
 - IAM policy follows least-privilege principles
@@ -181,33 +181,33 @@ module "external_dns" {
 
 ---
 
-# 💡 Design Decisions
+## 💡 Design Decisions
 
-## Why EKS Pod Identity?
+### Why EKS Pod Identity?
 
 AWS recommends EKS Pod Identity for new EKS clusters because it provides secure temporary AWS credentials without relying on OIDC-based IRSA.
 
 ---
 
-## Why TXT Registry?
+### Why TXT Registry?
 
 TXT records ensure ExternalDNS only modifies records that it owns, preventing accidental conflicts with manually managed DNS records or other controllers.
 
 ---
 
-## Why Helm?
+### Why Helm?
 
 Using the official Helm chart ensures compatibility with future ExternalDNS releases while simplifying upgrades and lifecycle management.
 
 ---
 
-## Why Least-Privilege IAM?
+### Why Least-Privilege IAM?
 
 The module grants permission to modify only the specified Route53 hosted zone instead of every hosted zone in the AWS account.
 
 ---
 
-# 📖 Operational Flow
+## 📖 Operational Flow
 
 ```text
 Developer deploys Service / Gateway
@@ -230,7 +230,7 @@ Developer deploys Service / Gateway
 
 ---
 
-# 📖 Next Steps
+## 📖 Next Steps
 
 After deploying this module, continue with:
 
