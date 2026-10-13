@@ -862,4 +862,4 @@ The completed platform includes:
 | Restricted EKS API access | PASS |
 | API authentication mode | PASS |
 | Explicit administrator access | PASS |
-| Bootstrap creator access disabled
+| Bootstrap creator access disabled | Not recorded in original report |

@@ -487,7 +487,7 @@ These are roadmap items and not Phase 3 drift.
 
 ## 14. Phase 3 Exit Decision
 
-**Phase 3 status: COMPLETE**
+Phase 3 status: COMPLETE
 
 The AVOS account now has a validated identity, governance, threat-detection, compliance, investigation, access-analysis, and secrets-encryption foundation.
 

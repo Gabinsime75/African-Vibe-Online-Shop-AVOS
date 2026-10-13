@@ -24,6 +24,7 @@ The service uses the committed Gradle wrapper. From `src/adservice`, run:
 The executable is created at `build/install/avos-adservice/bin/avos-adservice`.
 
 ### Upgrading gradle version
+
 If you need to upgrade the version of gradle then run
 
 ```bash

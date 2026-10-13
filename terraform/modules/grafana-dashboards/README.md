@@ -10,9 +10,9 @@ This approach follows production best practices by separating dashboard content 
 
 ---
 
-# Architecture
+## Architecture
 
-```
+```text
 Terraform
         │
         ▼
@@ -30,9 +30,9 @@ Grafana Dashboards
 
 ---
 
-# Module Structure
+## Module Structure
 
-```
+```text
 grafana-dashboards/
 ├── main.tf
 ├── variables.tf
@@ -51,9 +51,9 @@ grafana-dashboards/
 
 ---
 
-# Dashboards
+## Dashboards
 
-## Kubernetes Cluster
+### Kubernetes Cluster
 
 Provides an overall view of the Kubernetes platform including:
 
@@ -66,7 +66,7 @@ Provides an overall view of the Kubernetes platform including:
 
 ---
 
-## Kubernetes Nodes
+### Kubernetes Nodes
 
 Displays:
 
@@ -79,7 +79,7 @@ Displays:
 
 ---
 
-## Prometheus Overview
+### Prometheus Overview
 
 Displays:
 
@@ -92,7 +92,7 @@ Displays:
 
 ---
 
-## Istio Mesh
+### Istio Mesh
 
 Displays:
 
@@ -105,7 +105,7 @@ Displays:
 
 ---
 
-## Istio Workloads
+### Istio Workloads
 
 Displays:
 
@@ -118,7 +118,7 @@ Displays:
 
 ---
 
-## Loki Logs
+### Loki Logs
 
 Displays:
 
@@ -131,7 +131,7 @@ Displays:
 
 ---
 
-## OpenTelemetry Collector
+### OpenTelemetry Collector
 
 Displays:
 
@@ -144,7 +144,7 @@ Displays:
 
 ---
 
-## CloudWatch
+### CloudWatch
 
 Displays:
 
@@ -157,7 +157,7 @@ Displays:
 
 ---
 
-# Grafana Sidecar
+## Grafana Sidecar
 
 The dashboards are automatically imported through the kube-prometheus-stack Grafana dashboard sidecar.
 
@@ -172,7 +172,7 @@ Each ConfigMap includes:
 
 The sidecar continuously watches for ConfigMaps labeled:
 
-```
+```text
 grafana_dashboard = "1"
 ```
 
@@ -180,11 +180,11 @@ No Grafana API credentials are required.
 
 ---
 
-# Dashboard Organization
+## Dashboard Organization
 
 Dashboards are organized under the Grafana folder:
 
-```
+```text
 CloudHustler Platform
 ```
 
@@ -192,7 +192,7 @@ This keeps all platform dashboards separated from Grafana's built-in dashboards.
 
 ---
 
-# Terraform Resources
+## Terraform Resources
 
 This module creates:
 
@@ -205,7 +205,7 @@ No additional namespaces or Grafana deployments are created.
 
 ---
 
-# Inputs
+## Inputs
 
 | Name | Description |
 |------|-------------|
@@ -219,7 +219,7 @@ No additional namespaces or Grafana deployments are created.
 
 ---
 
-# Outputs
+## Outputs
 
 | Output | Description |
 |---------|-------------|
@@ -231,7 +231,7 @@ No additional namespaces or Grafana deployments are created.
 
 ---
 
-# Validation
+## Validation
 
 Verify ConfigMaps:
 
@@ -265,13 +265,13 @@ svc/kube-prometheus-stack-grafana \
 
 Open:
 
-```
+```text
 http://localhost:3000
 ```
 
 Navigate to:
 
-```
+```text
 Dashboards
 
 ↓
@@ -281,7 +281,7 @@ CloudHustler Platform
 
 ---
 
-# Best Practices
+## Best Practices
 
 - Store dashboards as JSON files.
 - Keep one dashboard per ConfigMap.

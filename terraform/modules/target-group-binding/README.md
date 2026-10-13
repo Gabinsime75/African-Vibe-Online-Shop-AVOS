@@ -2,7 +2,7 @@
 
 ---
 
-# 🚀 Overview
+## 🚀 Overview
 
 This module creates an AWS Load Balancer Controller **TargetGroupBinding** resource inside Kubernetes.
 
@@ -12,7 +12,7 @@ Unlike an Ingress resource, this module does **not** create a new Application Lo
 
 ---
 
-# 🎯 Purpose
+## 🎯 Purpose
 
 This module enables CloudHustler Commerce Platform to use a centrally managed AWS Application Load Balancer while routing traffic into the Istio service mesh.
 
@@ -26,9 +26,9 @@ It provides:
 
 ---
 
-# 🏗 Architecture
+## 🏗 Architecture
 
-```
+```text
                     Internet
                          │
                     Route53 DNS
@@ -60,7 +60,7 @@ It provides:
 
 ---
 
-# 🚀 Features
+## 🚀 Features
 
 - Supports existing AWS ALBs
 - Supports existing Target Groups
@@ -74,7 +74,7 @@ It provides:
 
 ---
 
-# 📦 Resources Created
+## 📦 Resources Created
 
 | Resource | Purpose |
 |----------|---------|
@@ -82,9 +82,9 @@ It provides:
 
 ---
 
-# 📁 Module Structure
+## 📁 Module Structure
 
-```
+```text
 modules/
 └── target-group-binding/
     ├── main.tf
@@ -95,7 +95,7 @@ modules/
 
 ---
 
-# 📥 Inputs
+## 📥 Inputs
 
 | Name | Description | Type | Required |
 |------|-------------|------|----------|
@@ -110,7 +110,7 @@ modules/
 
 ---
 
-# 📤 Outputs
+## 📤 Outputs
 
 | Output | Description |
 |---------|-------------|
@@ -124,7 +124,7 @@ modules/
 
 ---
 
-# 💻 Example Usage
+## 💻 Example Usage
 
 ```hcl
 module "target_group_binding" {
@@ -144,7 +144,7 @@ module "target_group_binding" {
 
 ---
 
-# 🔒 Security Considerations
+## 🔒 Security Considerations
 
 - Uses an existing AWS Target Group.
 - Does not create or modify ALB security groups.
@@ -156,9 +156,9 @@ module "target_group_binding" {
 
 ---
 
-# 💡 Design Decisions
+## 💡 Design Decisions
 
-## Existing Infrastructure
+### Existing Infrastructure
 
 This module intentionally **does not create**:
 
@@ -171,7 +171,7 @@ Those resources are owned by the **networking** Terraform root.
 
 ---
 
-## Separation of Responsibilities
+### Separation of Responsibilities
 
 Networking owns:
 
@@ -192,17 +192,17 @@ This separation prevents infrastructure duplication and follows enterprise infra
 
 ---
 
-## IP Target Mode
+### IP Target Mode
 
 CloudHustler uses:
 
-```
+```text
 target_type = "ip"
 ```
 
 instead of:
 
-```
+```text
 instance
 ```
 
@@ -216,17 +216,17 @@ Benefits include:
 
 ---
 
-## Health Checks
+### Health Checks
 
 Application traffic is forwarded to:
 
-```
+```text
 Service Port 80
 ```
 
 Istio gateway health checks use:
 
-```
+```text
 Port: 15021
 Path: /healthz/ready
 ```
@@ -235,11 +235,11 @@ Health checks are configured in the Target Group and are **not managed** by this
 
 ---
 
-## Why TargetGroupBinding?
+### Why TargetGroupBinding?
 
 Without TargetGroupBinding:
 
-```
+```text
 ALB
   │
   X
@@ -249,7 +249,7 @@ The ALB has no knowledge of Kubernetes Pods.
 
 With TargetGroupBinding:
 
-```
+```text
 ALB
    │
 Target Group
@@ -265,7 +265,7 @@ The AWS Load Balancer Controller continuously synchronizes Pod IPs with the Targ
 
 ---
 
-# 📖 Next Steps
+## 📖 Next Steps
 
 After deploying this module, the next components of the CloudHustler Commerce Platform are:
 
@@ -285,7 +285,7 @@ These components complete the production-grade Kubernetes platform before applic
 
 ---
 
-# ✅ Expected Result
+## ✅ Expected Result
 
 After deployment:
 

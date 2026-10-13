@@ -8,7 +8,7 @@ The module is designed to be reusable across development, staging, and productio
 
 ---
 
-# 🎯 Purpose
+## 🎯 Purpose
 
 This module creates:
 
@@ -26,7 +26,7 @@ This module creates:
 
 ---
 
-# 🏗 Architecture
+## 🏗 Architecture
 
 ```text
                          Internet
@@ -55,7 +55,7 @@ This design provides high availability by distributing infrastructure across mul
 
 ---
 
-# 🚀 Features
+## 🚀 Features
 
 - Region-agnostic Availability Zone discovery
 - Configurable number of Availability Zones
@@ -71,7 +71,7 @@ This design provides high availability by distributing infrastructure across mul
 
 ---
 
-# 📦 Resources Created
+## 📦 Resources Created
 
 The module provisions the following AWS resources:
 
@@ -89,7 +89,7 @@ The module provisions the following AWS resources:
 
 ---
 
-# 📁 Module Structure
+## 📁 Module Structure
 
 ```text
 modules/
@@ -110,7 +110,7 @@ Each file is responsible for a single networking component, making the module ea
 
 ---
 
-# 📥 Inputs
+## 📥 Inputs
 
 | Name | Description | Type | Default |
 |------|-------------|------|---------|
@@ -134,7 +134,7 @@ Each file is responsible for a single networking component, making the module ea
 
 ---
 
-# 📤 Outputs
+## 📤 Outputs
 
 The module exports:
 
@@ -161,7 +161,7 @@ These outputs are consumed by downstream modules such as:
 
 ---
 
-# 💻 Example Usage
+## 💻 Example Usage
 
 ```terraform
 module "vpc" {
@@ -208,7 +208,7 @@ module "vpc" {
 
 ---
 
-# 🌐 Network Layout
+## 🌐 Network Layout
 
 | Tier | Purpose |
 |------|---------|
@@ -220,7 +220,7 @@ This layered approach improves security by preventing direct internet access to 
 
 ---
 
-# 🏷 Tagging Strategy
+## 🏷 Tagging Strategy
 
 Every resource receives a common set of tags.
 
@@ -236,7 +236,7 @@ Resource-specific tags such as **Name** and **Tier** are automatically added by 
 
 ---
 
-# 🔒 Security Considerations
+## 🔒 Security Considerations
 
 This module follows AWS networking best practices.
 
@@ -250,11 +250,11 @@ This module follows AWS networking best practices.
 
 ---
 
-# 💡 Design Decisions
+## 💡 Design Decisions
 
 Several architectural decisions were made to improve portability, maintainability, and reusability.
 
-## Dynamic Availability Zone Discovery
+### Dynamic Availability Zone Discovery
 
 The module automatically discovers the available Availability Zones in the selected AWS Region.
 
@@ -271,7 +271,7 @@ This makes the module portable across AWS Regions without modification.
 
 ---
 
-## Separate Subnet Tiers
+### Separate Subnet Tiers
 
 The network is divided into three logical tiers:
 
@@ -283,7 +283,7 @@ This separation improves security, simplifies routing, and aligns with enterpris
 
 ---
 
-## Configurable NAT Strategy
+### Configurable NAT Strategy
 
 Development environments can reduce cost by deploying a single NAT Gateway.
 
@@ -293,7 +293,7 @@ The same module supports both deployment models through configuration.
 
 ---
 
-## File Organization
+### File Organization
 
 Instead of placing every resource into a single `main.tf`, the module is organized by responsibility.
 
@@ -301,7 +301,7 @@ This approach improves readability, simplifies maintenance, and scales better as
 
 ---
 
-# 📖 Next Steps
+## 📖 Next Steps
 
 This module provides the networking foundation for the remaining CloudHustler Commerce Platform infrastructure.
 

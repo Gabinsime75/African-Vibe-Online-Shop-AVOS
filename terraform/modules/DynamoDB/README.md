@@ -8,7 +8,7 @@ The module supports on-demand billing, Point-in-Time Recovery (PITR), server-sid
 
 ---
 
-# Features
+## Features
 
 - Creates an Amazon DynamoDB table
 - Supports PAY_PER_REQUEST billing mode
@@ -23,7 +23,7 @@ The module supports on-demand billing, Point-in-Time Recovery (PITR), server-sid
 
 ---
 
-# Resources Created
+## Resources Created
 
 This module provisions the following AWS resource:
 
@@ -31,7 +31,7 @@ This module provisions the following AWS resource:
 
 ---
 
-# Module Structure
+## Module Structure
 
 ```text
 dynamodb/
@@ -45,7 +45,7 @@ dynamodb/
 
 ---
 
-# Input Variables
+## Input Variables
 
 | Variable | Description | Type |
 |----------|-------------|------|
@@ -61,7 +61,7 @@ dynamodb/
 
 ---
 
-# Outputs
+## Outputs
 
 | Output | Description |
 |---------|-------------|
@@ -72,7 +72,7 @@ dynamodb/
 
 ---
 
-# Security Features
+## Security Features
 
 - Server-side encryption (SSE)
 - Customer-managed AWS KMS key support
@@ -84,7 +84,7 @@ dynamodb/
 
 ---
 
-# Example Usage
+## Example Usage
 
 ```hcl
 module "dynamodb" {
@@ -118,7 +118,7 @@ module "dynamodb" {
 
 ---
 
-# Best Practices
+## Best Practices
 
 - Use `PAY_PER_REQUEST` billing for variable or unpredictable workloads.
 - Enable Point-in-Time Recovery (PITR) to protect against accidental writes and deletions.
@@ -130,7 +130,7 @@ module "dynamodb" {
 
 ---
 
-# Common Use Cases
+## Common Use Cases
 
 - Terraform remote state locking
 - Application metadata storage
@@ -142,11 +142,12 @@ module "dynamodb" {
 
 ---
 
-# Notes
+## Notes
 
 - This module follows AWS Well-Architected Framework recommendations.
 - Supports both `STANDARD` and `STANDARD_INFREQUENT_ACCESS` table classes.
 - Optimized for production, staging, and development environments.
 - Designed as a reusable enterprise Terraform module.
 - Can be integrated with customer-managed AWS KMS keys for centralized encryption management.
-```
+
+```text

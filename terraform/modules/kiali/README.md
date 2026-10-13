@@ -10,7 +10,7 @@ This module is part of Phase 6 of the CloudHustler Commerce Platform.
 
 ---
 
-# Architecture
+## Architecture
 
 ```text
 Application Pods
@@ -42,7 +42,7 @@ Kiali
 
 ---
 
-# Features
+## Features
 
 * Official Kiali Server Helm chart
 * Terraform-managed Helm deployment
@@ -59,7 +59,7 @@ Kiali
 
 ---
 
-# Module Structure
+## Module Structure
 
 ```text
 modules/kiali/
@@ -71,7 +71,7 @@ modules/kiali/
 
 ---
 
-# Deployment Location
+## Deployment Location
 
 By default, Kiali is deployed into:
 
@@ -91,7 +91,7 @@ This prevents multiple Terraform modules from attempting to manage the same name
 
 ---
 
-# Dependencies
+## Dependencies
 
 Kiali should be deployed after:
 
@@ -116,7 +116,7 @@ depends_on = [
 
 ---
 
-# Prometheus Integration
+## Prometheus Integration
 
 Kiali uses Prometheus as its primary metrics source.
 
@@ -139,7 +139,7 @@ Without Prometheus, Kiali can inspect Istio configuration but cannot provide com
 
 ---
 
-# Grafana Integration
+## Grafana Integration
 
 Kiali connects to the existing Grafana deployment using the internal service URL:
 
@@ -157,7 +157,7 @@ grafana_enabled = false
 
 ---
 
-# Authentication
+## Authentication
 
 The development environment initially uses:
 
@@ -173,7 +173,7 @@ Kiali should not be exposed publicly with anonymous authentication enabled.
 
 ---
 
-# Service Exposure
+## Service Exposure
 
 Kiali is deployed using:
 
@@ -217,7 +217,7 @@ A separate Kubernetes Ingress or public LoadBalancer is not required.
 
 ---
 
-# Tracing Integration
+## Tracing Integration
 
 Tracing integration is initially disabled:
 
@@ -231,7 +231,7 @@ Once tracing is configured, Kiali can link service-mesh traffic to distributed t
 
 ---
 
-# Example Usage
+## Example Usage
 
 ```hcl
 module "kiali" {
@@ -275,9 +275,9 @@ module "kiali" {
 
 ---
 
-# Validation
+## Validation
 
-## Verify the Helm release
+### Verify the Helm release
 
 ```bash
 helm list -n istio-system
@@ -289,7 +289,7 @@ Expected result:
 kiali   istio-system   deployed
 ```
 
-## Verify the deployment
+### Verify the deployment
 
 ```bash
 kubectl get deployment -n istio-system kiali
@@ -302,7 +302,7 @@ READY   UP-TO-DATE   AVAILABLE
 1/1     1            1
 ```
 
-## Verify the pod
+### Verify the pod
 
 ```bash
 kubectl get pods -n istio-system \
@@ -315,7 +315,7 @@ Expected result:
 1/1 Running
 ```
 
-## Verify the service
+### Verify the service
 
 ```bash
 kubectl get service -n istio-system kiali
@@ -327,7 +327,7 @@ Expected service type:
 ClusterIP
 ```
 
-## Check logs
+### Check logs
 
 ```bash
 kubectl logs \
@@ -346,7 +346,7 @@ Check for:
 
 ---
 
-# Prometheus Validation
+## Prometheus Validation
 
 Port-forward Kiali:
 
@@ -377,9 +377,9 @@ Traffic graphs require active traffic between mesh workloads.
 
 ---
 
-# Troubleshooting
+## Troubleshooting
 
-## Kiali shows no traffic
+### Kiali shows no traffic
 
 Verify Istio metrics are reaching Prometheus:
 
@@ -398,7 +398,7 @@ If no data is returned, the issue is with Istio telemetry collection rather than
 
 ---
 
-## Prometheus connection failure
+### Prometheus connection failure
 
 Verify the Prometheus service:
 
@@ -421,7 +421,7 @@ kubectl run prometheus-test \
 
 ---
 
-## Kiali pod remains Pending
+### Kiali pod remains Pending
 
 Inspect scheduling events:
 
@@ -441,7 +441,7 @@ Check for:
 
 ---
 
-## Kiali cannot access namespaces
+### Kiali cannot access namespaces
 
 Verify:
 
@@ -460,7 +460,7 @@ kubectl get clusterrolebinding | grep kiali
 
 ---
 
-# Terraform Outputs
+## Terraform Outputs
 
 The module exports:
 
@@ -483,7 +483,7 @@ The module exports:
 
 ---
 
-# Production Enhancements
+## Production Enhancements
 
 Before using Kiali in production, implement:
 
@@ -501,7 +501,7 @@ Before using Kiali in production, implement:
 
 ---
 
-# CloudHustler Commerce Platform
+## CloudHustler Commerce Platform
 
 **Project:** CloudHustler Commerce Platform
 **Phase:** Platform Services

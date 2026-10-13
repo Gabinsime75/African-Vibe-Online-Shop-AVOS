@@ -30,4 +30,3 @@ YAML
     ├── Defines alert durations
     ├── Defines severity
     └── Defines annotations
-    
