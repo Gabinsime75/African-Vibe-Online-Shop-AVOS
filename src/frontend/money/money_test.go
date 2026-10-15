@@ -16,19 +16,19 @@ package money
 
 import (
 	"fmt"
-	"reflect"
+	"google.golang.org/protobuf/proto"
 	"testing"
 
 	pb "github.com/Gabinsime75/African-Vibe-Online-Shop-AVOS/src/frontend/genproto"
 )
 
-func mmc(u int64, n int32, c string) pb.Money { return pb.Money{Units: u, Nanos: n, CurrencyCode: c} }
-func mm(u int64, n int32) pb.Money            { return mmc(u, n, "") }
+func mmc(u int64, n int32, c string) *pb.Money { return &pb.Money{Units: u, Nanos: n, CurrencyCode: c} }
+func mm(u int64, n int32) *pb.Money            { return mmc(u, n, "") }
 
 func TestIsValid(t *testing.T) {
 	tests := []struct {
 		name string
-		in   pb.Money
+		in   *pb.Money
 		want bool
 	}{
 		{"valid -/-", mm(-981273891273, -999999999), true},
@@ -52,7 +52,7 @@ func TestIsValid(t *testing.T) {
 func TestIsZero(t *testing.T) {
 	tests := []struct {
 		name string
-		in   pb.Money
+		in   *pb.Money
 		want bool
 	}{
 		{"zero", mm(0, 0), true},
@@ -73,7 +73,7 @@ func TestIsZero(t *testing.T) {
 func TestIsPositive(t *testing.T) {
 	tests := []struct {
 		name string
-		in   pb.Money
+		in   *pb.Money
 		want bool
 	}{
 		{"zero", mm(0, 0), false},
@@ -94,7 +94,7 @@ func TestIsPositive(t *testing.T) {
 func TestIsNegative(t *testing.T) {
 	tests := []struct {
 		name string
-		in   pb.Money
+		in   *pb.Money
 		want bool
 	}{
 		{"zero", mm(0, 0), false},
@@ -114,8 +114,8 @@ func TestIsNegative(t *testing.T) {
 
 func TestAreSameCurrency(t *testing.T) {
 	type args struct {
-		l pb.Money
-		r pb.Money
+		l *pb.Money
+		r *pb.Money
 	}
 	tests := []struct {
 		name string
@@ -139,8 +139,8 @@ func TestAreSameCurrency(t *testing.T) {
 
 func TestAreEquals(t *testing.T) {
 	type args struct {
-		l pb.Money
-		r pb.Money
+		l *pb.Money
+		r *pb.Money
 	}
 	tests := []struct {
 		name string
@@ -165,8 +165,8 @@ func TestAreEquals(t *testing.T) {
 func TestNegate(t *testing.T) {
 	tests := []struct {
 		name string
-		in   pb.Money
-		want pb.Money
+		in   *pb.Money
+		want *pb.Money
 	}{
 		{"zero", mm(0, 0), mm(0, 0)},
 		{"negative", mm(-1, -200), mm(1, 200)},
@@ -201,13 +201,13 @@ func TestMust_panic(t *testing.T) {
 
 func TestSum(t *testing.T) {
 	type args struct {
-		l pb.Money
-		r pb.Money
+		l *pb.Money
+		r *pb.Money
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    pb.Money
+		want    *pb.Money
 		wantErr error
 	}{
 		{"0+0=0", args{mm(0, 0), mm(0, 0)}, mm(0, 0), nil},
@@ -237,8 +237,34 @@ func TestSum(t *testing.T) {
 			if err != tt.wantErr {
 				t.Errorf("Sum([%v],[%v]): expected err=\"%v\" got=\"%v\"", tt.args.l, tt.args.r, tt.wantErr, err)
 			}
-			if !reflect.DeepEqual(got, tt.want) {
+			if !proto.Equal(got, tt.want) {
 				t.Errorf("Sum([%v],[%v]) = %v, want %v", tt.args.l, tt.args.r, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestMultiplySlowDoesNotAliasInput(t *testing.T) {
+	for _, quantity := range []uint32{1, 3} {
+		t.Run(fmt.Sprint(quantity), func(t *testing.T) {
+			input := mmc(2, 250000000, "USD")
+			original := proto.Clone(input).(*pb.Money)
+
+			got := MultiplySlow(input, quantity)
+			want := mmc(
+				int64(quantity)*2,
+				int32(quantity)*250000000,
+				"USD",
+			)
+
+			if !proto.Equal(got, want) {
+				t.Fatalf("MultiplySlow() = %v, want %v", got, want)
+			}
+
+			got.Units = 999
+
+			if !proto.Equal(input, original) {
+				t.Fatal("Changing the result modified the input")
 			}
 		})
 	}
