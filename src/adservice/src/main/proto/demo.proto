@@ -16,6 +16,8 @@ syntax = "proto3";
 
 package hipstershop;
 
+option go_package = "github.com/Gabinsime75/African-Vibe-Online-Shop-AVOS/src/frontend/genproto;hipstershop";
+
 // Compatibility note: AVOS retains this package name during Phase 1 so existing
 // clients in every implementation language continue to use the same gRPC API.
 

@@ -1,0 +1,113 @@
+name: AVOS Protobuf Checks
+
+on:
+  pull_request:
+    paths:
+      - 'protos/**'
+      - 'src/**/*.proto'
+      - 'src/**/buf.yaml'
+      - '.github/workflows/avos-protobuf-checks.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'protos/**'
+      - 'src/**/*.proto'
+      - 'src/**/buf.yaml'
+      - '.github/workflows/avos-protobuf-checks.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: avos-protobuf-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compatibility:
+    name: Compile and check contract compatibility
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out source and history
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+        with:
+          go-version: '1.25.12'
+          cache: false
+
+      - name: Install pinned Buf CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          go install github.com/bufbuild/buf/cmd/buf@v1.68.2
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Check shared schema copies
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          shared = Path("protos/demo.proto").read_text(encoding="utf-8")
+          copies = [
+              "src/adservice/src/main/proto/demo.proto",
+              "src/currencyservice/proto/demo.proto",
+              "src/paymentservice/proto/demo.proto",
+          ]
+
+          for name in copies:
+              if Path(name).read_text(encoding="utf-8") != shared:
+                  raise SystemExit(f"Shared protobuf copy is out of date: {name}")
+              print(f"PASS: {name}")
+          PY
+
+      - name: Compile schemas and check compatibility
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || '' }}
+        run: |
+          set -euo pipefail
+
+          base="$BASE_SHA"
+          if [[ -z "$base" ]]; then
+            base="$(git rev-parse origin/main)"
+          fi
+
+          git cat-file -e "${base}^{commit}"
+          echo "Comparing contracts against commit: $base"
+          buf --version
+
+          baseline="$(mktemp -d)"
+          trap 'rm -rf -- "$baseline"' EXIT
+
+          git archive "$base" \
+            protos \
+            src/cartservice/src/protos \
+            | tar -x -C "$baseline"
+
+          for directory in protos src/cartservice/src/protos; do
+            (
+              cd "$directory"
+              buf build
+              buf breaking --against "$baseline/$directory"
+            )
+          done
+
+          {
+            echo "### Protobuf compatibility"
+            echo ""
+            echo "- Baseline commit: $base"
+            echo "- Shared schema copies: passed"
+            echo "- Shared and cart schema compilation: passed"
+            echo "- FILE compatibility checks: passed"
+          } >> "$GITHUB_STEP_SUMMARY"
