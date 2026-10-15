@@ -1,0 +1,36 @@
+name: AVOS CI - shippingservice
+
+on:
+  pull_request:
+    paths:
+      - 'src/shippingservice/**'
+      - 'protos/**'
+      - '.github/scripts/**'
+      - '.github/workflows/avos-service-ci.yml'
+      - '.github/workflows/avos-ci-shippingservice.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/shippingservice/**'
+      - 'protos/**'
+      - '.github/scripts/**'
+      - '.github/workflows/avos-service-ci.yml'
+      - '.github/workflows/avos-ci-shippingservice.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: avos-ci-shippingservice-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  service-ci:
+    uses: ./.github/workflows/avos-service-ci.yml
+    with:
+      service-name: shippingservice
+      service-path: src/shippingservice
+      runtime: go
+      ecr-repository: avos/dev/shippingservice

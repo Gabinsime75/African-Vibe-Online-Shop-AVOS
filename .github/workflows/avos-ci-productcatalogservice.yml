@@ -1,0 +1,36 @@
+name: AVOS CI - productcatalogservice
+
+on:
+  pull_request:
+    paths:
+      - 'src/productcatalogservice/**'
+      - 'protos/**'
+      - '.github/scripts/**'
+      - '.github/workflows/avos-service-ci.yml'
+      - '.github/workflows/avos-ci-productcatalogservice.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/productcatalogservice/**'
+      - 'protos/**'
+      - '.github/scripts/**'
+      - '.github/workflows/avos-service-ci.yml'
+      - '.github/workflows/avos-ci-productcatalogservice.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: avos-ci-productcatalogservice-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  service-ci:
+    uses: ./.github/workflows/avos-service-ci.yml
+    with:
+      service-name: productcatalogservice
+      service-path: src/productcatalogservice
+      runtime: go
+      ecr-repository: avos/dev/productcatalogservice

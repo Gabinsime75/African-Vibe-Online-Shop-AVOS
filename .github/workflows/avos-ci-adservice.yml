@@ -1,0 +1,36 @@
+name: AVOS CI - adservice
+
+on:
+  pull_request:
+    paths:
+      - 'src/adservice/**'
+      - 'protos/**'
+      - '.github/scripts/**'
+      - '.github/workflows/avos-service-ci.yml'
+      - '.github/workflows/avos-ci-adservice.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/adservice/**'
+      - 'protos/**'
+      - '.github/scripts/**'
+      - '.github/workflows/avos-service-ci.yml'
+      - '.github/workflows/avos-ci-adservice.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: avos-ci-adservice-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  service-ci:
+    uses: ./.github/workflows/avos-service-ci.yml
+    with:
+      service-name: adservice
+      service-path: src/adservice
+      runtime: java
+      ecr-repository: avos/dev/adservice

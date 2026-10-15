@@ -1,0 +1,36 @@
+name: AVOS CI - emailservice
+
+on:
+  pull_request:
+    paths:
+      - 'src/emailservice/**'
+      - 'protos/**'
+      - '.github/scripts/**'
+      - '.github/workflows/avos-service-ci.yml'
+      - '.github/workflows/avos-ci-emailservice.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/emailservice/**'
+      - 'protos/**'
+      - '.github/scripts/**'
+      - '.github/workflows/avos-service-ci.yml'
+      - '.github/workflows/avos-ci-emailservice.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: avos-ci-emailservice-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  service-ci:
+    uses: ./.github/workflows/avos-service-ci.yml
+    with:
+      service-name: emailservice
+      service-path: src/emailservice
+      runtime: python
+      ecr-repository: avos/dev/emailservice

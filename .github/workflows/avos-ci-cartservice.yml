@@ -1,0 +1,36 @@
+name: AVOS CI - cartservice
+
+on:
+  pull_request:
+    paths:
+      - 'src/cartservice/**'
+      - 'protos/**'
+      - '.github/scripts/**'
+      - '.github/workflows/avos-service-ci.yml'
+      - '.github/workflows/avos-ci-cartservice.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/cartservice/**'
+      - 'protos/**'
+      - '.github/scripts/**'
+      - '.github/workflows/avos-service-ci.yml'
+      - '.github/workflows/avos-ci-cartservice.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: avos-ci-cartservice-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  service-ci:
+    uses: ./.github/workflows/avos-service-ci.yml
+    with:
+      service-name: cartservice
+      service-path: src/cartservice
+      runtime: dotnet
+      ecr-repository: avos/dev/cartservice
