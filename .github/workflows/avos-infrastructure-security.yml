@@ -42,7 +42,7 @@ jobs:
           set -euo pipefail
           python3 -m unittest discover \
             -s .github/scripts/security \
-            -p test_policy.py \
+            -p "test*.py" \
             -v
 
       - name: Install verified Trivy

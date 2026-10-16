@@ -69,9 +69,52 @@ def evaluate(report):
     return blockers, counts
 
 
+
+def apply_exceptions(blockers, entries, today=None):
+    from datetime import date
+
+    today = today or date.today()
+    if not isinstance(entries, list):
+        raise ValueError("Exceptions must be a list")
+
+    required = {"id", "target", "expires", "owner", "reason", "controls", "review"}
+    rules = {}
+    for entry in entries:
+        if not isinstance(entry, dict) or set(entry) != required:
+            raise ValueError("Invalid exception fields")
+        if any(not isinstance(value, str) or not value.strip()
+               for value in entry.values()):
+            raise ValueError("Exception fields must be nonempty strings")
+        target = entry["target"]
+        if (
+            target.startswith("/")
+            or "\\" in target
+            or any(part in {"", ".", ".."} for part in target.split("/"))
+            or any(char in target for char in "*?[]")
+        ):
+            raise ValueError("Exception target must be an exact relative path")
+        if today >= date.fromisoformat(entry["expires"]):
+            raise ValueError("Expired exception: " + entry["id"])
+        key = ("misconfiguration", entry["id"], target)
+        if key in rules:
+            raise ValueError("Duplicate exception")
+        rules[key] = entry
+
+    remaining = []
+    accepted = []
+    for blocker in blockers:
+        entry = rules.get(blocker)
+        if entry is None:
+            remaining.append(blocker)
+        else:
+            accepted.append(dict(entry))
+    return remaining, accepted
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--output-dir", required=True)
+    parser.add_argument("--exceptions")
     parser.add_argument("reports", nargs="+")
     args = parser.parse_args()
 
@@ -88,6 +131,19 @@ def main():
         path = Path(name)
         report = json.loads(path.read_text(encoding="utf-8"))
         blockers, counts = evaluate(report)
+
+        if args.exceptions:
+            entries = json.loads(
+                Path(args.exceptions).read_text(encoding="utf-8")
+            )
+            blockers, accepted = apply_exceptions(blockers, entries)
+            report["AVOSAcceptedFindings"] = accepted
+            for entry in accepted:
+                print(
+                    "ACCEPTED: " + entry["id"] + " in " + entry["target"]
+                    + " until " + entry["expires"]
+                    + ": " + entry["reason"]
+                )
 
         (output / path.name).write_text(
             json.dumps(report, indent=2) + "\n",

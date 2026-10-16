@@ -1,0 +1,38 @@
+[
+  {
+    "id": "AWS-0040",
+    "target": "container-platform/eks-cluster.tf",
+    "expires": "2026-11-15",
+    "owner": "PlatformEngineering",
+    "reason": "Development administrators currently use the public EKS API endpoint.",
+    "controls": "Terraform requires restricted IPv4 CIDRs and prohibits 0.0.0.0/0; API authentication uses IAM access entries.",
+    "review": "Review private administrator connectivity before renewal."
+  },
+  {
+    "id": "AWS-0053",
+    "target": "edge-security/alb.tf",
+    "expires": "2026-11-15",
+    "owner": "PlatformEngineering",
+    "reason": "The public ALB is intentional in the current AVOS ingress design.",
+    "controls": "Validation ingress is limited by administrator CIDRs; gateway traffic is restricted through security-group references.",
+    "review": "Review origin access restrictions when completing customer-facing edge security."
+  },
+  {
+    "id": "AWS-0054",
+    "target": "edge-security/alb.tf",
+    "expires": "2026-10-23",
+    "owner": "PlatformEngineering",
+    "reason": "The initial HTTP listener supports temporary platform validation.",
+    "controls": "Administrator CIDR restrictions limit exposure. HTTP remains unencrypted; no sensitive test payloads are permitted.",
+    "review": "Replace with HTTPS before customer traffic; reassess this exception by its expiry date."
+  },
+  {
+    "id": "KSV-0108",
+    "target": "platform-services/integration-tests/external-dns/service.yaml",
+    "expires": "2026-11-15",
+    "owner": "PlatformEngineering",
+    "reason": "This isolated ExternalDNS fixture intentionally uses ExternalName to validate DNS reconciliation.",
+    "controls": "The fixture targets example.com and contains no application credentials.",
+    "review": "Remove the fixture after validation or review its continued need."
+  }
+]
