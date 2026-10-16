@@ -5,14 +5,21 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0-noble
 
 LABEL org.opencontainers.image.title="AVOS Cart Service (debug)"
 
-WORKDIR /app
-COPY . ./
-RUN dotnet restore cartservice.csproj
-
 ENV ASPNETCORE_ENVIRONMENT=Development \
     ASPNETCORE_HTTP_PORTS=7070 \
     CART_STORE=memory \
-    ENABLE_OTEL=false
+    ENABLE_OTEL=false \
+    DOTNET_CLI_HOME=/tmp/avos-dotnet \
+    NUGET_PACKAGES=/tmp/avos-nuget
+
+WORKDIR /app
+RUN chown 1654:1654 /app
+
+COPY --chown=1654:1654 . ./
+
+USER 1654:1654
+RUN dotnet restore cartservice.csproj
 
 EXPOSE 7070
+
 ENTRYPOINT ["dotnet", "run", "--no-restore", "--project", "cartservice.csproj"]
