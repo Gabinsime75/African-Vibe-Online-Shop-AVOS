@@ -255,6 +255,35 @@ jobs:
             --label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
             "$BUILD_CONTEXT"
 
+      - name: Test AVOS security policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover \
+            -s .github/scripts/security \
+            -p test_policy.py \
+            -v
+
+      - name: Install verified Trivy
+        shell: bash
+        run: bash .github/scripts/security/install-trivy.sh
+
+      - name: Scan service and built image
+        id: security
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ steps.contract.outputs.source-sha }}
+        run: bash .github/scripts/security/scan-service.sh
+
+      - name: Upload sanitized security reports
+        if: always() && steps.security.outcome != 'skipped'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: avos-security-${{ inputs.service-name }}
+          path: ${{ runner.temp }}/avos-security/${{ inputs.service-name }}/*.json
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: Record build summary
         shell: bash
         env:
