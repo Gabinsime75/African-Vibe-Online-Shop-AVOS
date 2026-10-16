@@ -239,21 +239,13 @@ jobs:
             installDist
 
       - name: Build local validation image
+        id: image
         shell: bash
         env:
           BUILD_CONTEXT: ${{ steps.contract.outputs.context }}
           DOCKERFILE: ${{ steps.contract.outputs.dockerfile }}
           SOURCE_SHA: ${{ steps.contract.outputs.source-sha }}
-        run: |
-          set -euo pipefail
-
-          docker build \
-            --platform linux/amd64 \
-            --file "$DOCKERFILE" \
-            --tag "avos/$SERVICE_NAME:$SOURCE_SHA" \
-            --label "org.opencontainers.image.revision=$SOURCE_SHA" \
-            --label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
-            "$BUILD_CONTEXT"
+        run: bash .github/scripts/supply-chain/build-image.sh
 
       - name: Test AVOS security policy
         shell: bash
@@ -282,6 +274,32 @@ jobs:
           name: avos-security-${{ inputs.service-name }}
           path: ${{ runner.temp }}/avos-security/${{ inputs.service-name }}/*.json
           if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Test supply-chain evidence validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover \
+            -s .github/scripts/supply-chain \
+            -p 'test*.py' \
+            -v
+
+      - name: Generate SBOM and build evidence
+        id: evidence
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ steps.contract.outputs.source-sha }}
+          DOCKERFILE: ${{ steps.contract.outputs.dockerfile }}
+        run: python3 .github/scripts/supply-chain/create-evidence.py
+
+      - name: Upload supply-chain evidence
+        if: always() && steps.image.outcome == 'success'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: avos-supply-chain-${{ inputs.service-name }}-${{ steps.contract.outputs.source-sha }}
+          path: ${{ runner.temp }}/avos-supply-chain/${{ inputs.service-name }}/
+          if-no-files-found: error
           retention-days: 7
 
       - name: Record build summary
