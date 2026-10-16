@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - phase-7-ci-supply-chain
     paths:
       - 'terraform/ci/**'
       - '.github/workflows/avos-aws-oidc-check.yml'
@@ -22,8 +21,7 @@ jobs:
     name: Verify AWS OIDC identity
     if: >-
       github.repository == 'Gabinsime75/African-Vibe-Online-Shop-AVOS' &&
-      (github.ref == 'refs/heads/main' ||
-       github.ref == 'refs/heads/phase-7-ci-supply-chain')
+      github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
 

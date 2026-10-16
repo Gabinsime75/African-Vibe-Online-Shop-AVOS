@@ -12,8 +12,3 @@ output "trusted_github_subjects" {
   description = "Exact GitHub subjects allowed to assume the CI role."
   value       = local.trusted_subjects
 }
-
-output "validation_branch_enabled" {
-  description = "Whether temporary Phase 7 branch authentication is enabled."
-  value       = var.enable_validation_branch
-}

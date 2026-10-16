@@ -3,10 +3,7 @@ locals {
 
   github_subject_prefix = "repo:Gabinsime75@115108532/African-Vibe-Online-Shop-AVOS@1368914543"
 
-  trusted_branches = var.enable_validation_branch ? [
-    "main",
-    "phase-7-ci-supply-chain"
-  ] : ["main"]
+  trusted_branches = ["main"]
 
   trusted_subjects = [
     for branch in local.trusted_branches :
