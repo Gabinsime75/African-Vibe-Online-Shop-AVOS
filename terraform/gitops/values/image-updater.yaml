@@ -1,0 +1,52 @@
+fullnameOverride: argocd-image-updater
+
+replicaCount: 1
+
+serviceAccount:
+  create: true
+  name: argocd-image-updater
+
+extraEnv:
+  - name: AWS_REGION
+    value: us-east-2
+  - name: AWS_DEFAULT_REGION
+    value: us-east-2
+  - name: AWS_EC2_METADATA_DISABLED
+    value: "true"
+
+config:
+  registries:
+    - name: AVOS ECR
+      api_url: https://396913735153.dkr.ecr.us-east-2.amazonaws.com
+      prefix: 396913735153.dkr.ecr.us-east-2.amazonaws.com
+      credentials: ext:/scripts/ecr-login.sh
+      credsexpire: 10h
+
+authScripts:
+  enabled: true
+  scripts:
+    ecr-login.sh: |
+      #!/bin/sh
+      set -eu
+      password="$(aws ecr get-login-password --region us-east-2)"
+      printf 'AWS:%s\n' "$password"
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
