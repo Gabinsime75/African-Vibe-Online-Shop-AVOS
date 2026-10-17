@@ -28,6 +28,9 @@ concurrency:
 
 jobs:
   service-ci:
+    permissions:
+      contents: read
+      id-token: write
     uses: ./.github/workflows/avos-service-ci.yml
     with:
       service-name: shippingservice

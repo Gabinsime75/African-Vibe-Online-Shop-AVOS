@@ -32,6 +32,12 @@ on:
       image-id:
         description: Verified local image configuration digest
         value: ${{ jobs.build.outputs.image-id }}
+      image-uri:
+        description: Published ECR image reference, when publication runs
+        value: ${{ jobs.build.outputs.image-uri }}
+      image-digest:
+        description: Verified ECR manifest digest, when publication runs
+        value: ${{ jobs.build.outputs.image-digest }}
 
 permissions:
   contents: read
@@ -41,11 +47,16 @@ jobs:
     name: Validate contract and build
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
     outputs:
       source-sha: ${{ steps.contract.outputs.source-sha }}
       image-tag: ${{ steps.image.outputs.image-tag }}
       local-image: ${{ steps.image.outputs.local-image }}
       image-id: ${{ steps.image.outputs.image-id }}
+      image-uri: ${{ steps.publication.outputs.image-uri }}
+      image-digest: ${{ steps.publication.outputs.image-digest }}
     env:
       SERVICE_NAME: ${{ inputs.service-name }}
       SERVICE_PATH: ${{ inputs.service-path }}
@@ -99,6 +110,11 @@ jobs:
 
           if [[ ! "$ECR_REPOSITORY" =~ ^[a-z0-9]+([._/-][a-z0-9]+)*$ ]]; then
             echo "::error::Invalid ECR repository name."
+            exit 1
+          fi
+
+          if [[ "$ECR_REPOSITORY" != "avos/dev/$SERVICE_NAME" ]]; then
+            echo "::error::ECR repository must match the AVOS service."
             exit 1
           fi
 
@@ -314,6 +330,72 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+      - name: Authenticate for ECR publication
+        id: aws_publication
+        if: >-
+          success() &&
+          steps.security.outcome == 'success' &&
+          steps.evidence.outcome == 'success' &&
+          github.repository == 'Gabinsime75/African-Vibe-Online-Shop-AVOS' &&
+          github.ref == 'refs/heads/main' &&
+          (github.event_name == 'push' ||
+           github.event_name == 'workflow_dispatch')
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: arn:aws:iam::396913735153:role/avos-dev-github-ci
+          aws-region: us-east-2
+          audience: sts.amazonaws.com
+          allowed-account-ids: '396913735153'
+          role-duration-seconds: 900
+          role-session-name: avos-${{ inputs.service-name }}-${{ github.run_id }}-${{ github.run_attempt }}
+          unset-current-credentials: true
+          retry-max-attempts: 2
+          inline-session-policy: >-
+            {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": "ecr:GetAuthorizationToken",
+                  "Resource": "*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "ecr:BatchCheckLayerAvailability",
+                    "ecr:BatchGetImage",
+                    "ecr:CompleteLayerUpload",
+                    "ecr:DescribeImages",
+                    "ecr:DescribeRepositories",
+                    "ecr:GetDownloadUrlForLayer",
+                    "ecr:InitiateLayerUpload",
+                    "ecr:PutImage",
+                    "ecr:UploadLayerPart"
+                  ],
+                  "Resource": "arn:aws:ecr:us-east-2:396913735153:repository/${{ inputs.ecr-repository }}"
+                }
+              ]
+            }
+
+      - name: Publish and verify ECR image
+        id: publication
+        if: success() && steps.aws_publication.outcome == 'success'
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ steps.contract.outputs.source-sha }}
+          LOCAL_IMAGE: ${{ steps.image.outputs.local-image }}
+          IMAGE_ID: ${{ steps.image.outputs.image-id }}
+        run: python3 .github/scripts/supply-chain/publish-image.py
+
+      - name: Upload publication evidence
+        if: always() && steps.publication.outcome == 'success'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: avos-publication-${{ inputs.service-name }}-${{ steps.contract.outputs.source-sha }}
+          path: ${{ runner.temp }}/avos-publication/${{ inputs.service-name }}/publication.json
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Record build summary
         shell: bash
         env:
@@ -321,6 +403,9 @@ jobs:
           IMAGE_TAG: ${{ steps.image.outputs.image-tag }}
           LOCAL_IMAGE: ${{ steps.image.outputs.local-image }}
           IMAGE_ID: ${{ steps.image.outputs.image-id }}
+          PUBLICATION_OUTCOME: ${{ steps.publication.outcome }}
+          PUBLISHED_IMAGE: ${{ steps.publication.outputs.image-uri }}
+          PUBLISHED_DIGEST: ${{ steps.publication.outputs.image-digest }}
         run: |
           {
             echo "### AVOS container build"
@@ -332,5 +417,10 @@ jobs:
             echo "- Local image: $LOCAL_IMAGE"
             echo "- Local configuration digest: $IMAGE_ID"
             echo "- Intended ECR repository: $ECR_REPOSITORY"
-            echo "- Publication: not enabled"
+            if [[ "$PUBLICATION_OUTCOME" == "success" ]]; then
+              echo "- Published image: $PUBLISHED_IMAGE"
+              echo "- ECR manifest digest: $PUBLISHED_DIGEST"
+            else
+              echo "- Publication: not performed for this run"
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
