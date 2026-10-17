@@ -41,9 +41,22 @@ spec:
         sidecar.istio.io/inject: "true"
     spec:
       serviceAccountName: avos-mesh-backend
+      securityContext:
+        runAsNonRoot: true
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: http
           image: python:3.12-slim
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
           command: ["python", "-u", "/app/server.py"]
           ports:
             - name: http
@@ -60,10 +73,15 @@ spec:
               cpu: 200m
               memory: 128Mi
           volumeMounts:
+            - name: temporary
+              mountPath: /tmp
             - name: server
               mountPath: /app
               readOnly: true
       volumes:
+        - name: temporary
+          emptyDir:
+            sizeLimit: 16Mi
         - name: server
           configMap:
             name: avos-resilience-server

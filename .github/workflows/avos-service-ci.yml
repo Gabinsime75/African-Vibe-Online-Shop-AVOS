@@ -1,0 +1,426 @@
+name: AVOS Reusable Service CI
+
+on:
+  workflow_call:
+    inputs:
+      service-name:
+        description: AVOS service directory name
+        required: true
+        type: string
+      service-path:
+        description: Repository-relative service directory
+        required: true
+        type: string
+      runtime:
+        description: go, node, python, java, or dotnet
+        required: true
+        type: string
+      ecr-repository:
+        description: Intended ECR repository name, without registry hostname
+        required: true
+        type: string
+    outputs:
+      source-sha:
+        description: Commit checked out and built
+        value: ${{ jobs.build.outputs.source-sha }}
+      image-tag:
+        description: Full source SHA used as the image tag
+        value: ${{ jobs.build.outputs.image-tag }}
+      local-image:
+        description: Local reference of the built image
+        value: ${{ jobs.build.outputs.local-image }}
+      image-id:
+        description: Verified local image configuration digest
+        value: ${{ jobs.build.outputs.image-id }}
+      image-uri:
+        description: Published ECR image reference, when publication runs
+        value: ${{ jobs.build.outputs.image-uri }}
+      image-digest:
+        description: Verified ECR manifest digest, when publication runs
+        value: ${{ jobs.build.outputs.image-digest }}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Validate contract and build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      source-sha: ${{ steps.contract.outputs.source-sha }}
+      image-tag: ${{ steps.image.outputs.image-tag }}
+      local-image: ${{ steps.image.outputs.local-image }}
+      image-id: ${{ steps.image.outputs.image-id }}
+      image-uri: ${{ steps.publication.outputs.image-uri }}
+      image-digest: ${{ steps.publication.outputs.image-digest }}
+    env:
+      SERVICE_NAME: ${{ inputs.service-name }}
+      SERVICE_PATH: ${{ inputs.service-path }}
+      SERVICE_RUNTIME: ${{ inputs.runtime }}
+      ECR_REPOSITORY: ${{ inputs.ecr-repository }}
+      DOCKER_BUILDKIT: "1"
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: Validate service contract
+        id: contract
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          case "$SERVICE_NAME" in
+            frontend|checkoutservice|productcatalogservice|shippingservice)
+              expected_runtime=go
+              ;;
+            currencyservice|paymentservice)
+              expected_runtime=node
+              ;;
+            emailservice|recommendationservice|shoppingassistantservice|loadgenerator)
+              expected_runtime=python
+              ;;
+            adservice)
+              expected_runtime=java
+              ;;
+            cartservice)
+              expected_runtime=dotnet
+              ;;
+            *)
+              echo "::error::Unknown AVOS service."
+              exit 1
+              ;;
+          esac
+
+          if [[ "$SERVICE_RUNTIME" != "$expected_runtime" ]]; then
+            echo "::error::Runtime does not match the service contract."
+            exit 1
+          fi
+
+          if [[ "$SERVICE_PATH" != "src/$SERVICE_NAME" ]]; then
+            echo "::error::Service path must be src/<service-name>."
+            exit 1
+          fi
+
+          if [[ ! "$ECR_REPOSITORY" =~ ^[a-z0-9]+([._/-][a-z0-9]+)*$ ]]; then
+            echo "::error::Invalid ECR repository name."
+            exit 1
+          fi
+
+          if [[ "$ECR_REPOSITORY" != "avos/dev/$SERVICE_NAME" ]]; then
+            echo "::error::ECR repository must match the AVOS service."
+            exit 1
+          fi
+
+          context="$SERVICE_PATH"
+          if [[ "$SERVICE_NAME" == "cartservice" ]]; then
+            context="$SERVICE_PATH/src"
+          fi
+
+          test -d "$context"
+          test -f "$context/Dockerfile"
+
+          source_sha="$(git rev-parse HEAD)"
+          echo "context=$context" >> "$GITHUB_OUTPUT"
+          echo "dockerfile=$context/Dockerfile" >> "$GITHUB_OUTPUT"
+          echo "source-sha=$source_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Python
+        if: inputs.runtime == 'python'
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: ${{ inputs.service-name == 'shoppingassistantservice' && '3.12.12' || '3.14.2' }}
+
+      - name: Check Python dependencies and syntax
+        if: inputs.runtime == 'python'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install -r "$SERVICE_PATH/requirements.txt"
+          python -m pip check
+          python -m compileall -q "$SERVICE_PATH"
+
+      - name: Run Python unit tests
+        if: inputs.runtime == 'python'
+        shell: bash
+        env:
+          AWS_EC2_METADATA_DISABLED: "true"
+        run: |
+          set -euo pipefail
+          python .github/scripts/python-tests.py "$SERVICE_NAME"
+
+      - name: Set up Go
+        if: inputs.runtime == 'go'
+        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+        with:
+          go-version: '1.25.12'
+          cache: false
+
+      - name: Check and test Go service
+        if: inputs.runtime == 'go'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$SERVICE_PATH"
+
+          go mod download
+          go mod verify
+
+          unformatted="$(git ls-files -z -- '*.go' | xargs -0 gofmt -l)"
+          if [[ -n "$unformatted" ]]; then
+            echo "::error::Go files require formatting:"
+            printf '%s\n' "$unformatted"
+            exit 1
+          fi
+
+          go vet ./...
+
+          report="$RUNNER_TEMP/$SERVICE_NAME-tests.jsonl"
+          go test -race -count=1 -json ./... | tee "$report"
+
+          if ! grep -Eq '"Action":"run".*"Test":' "$report"; then
+            echo "::error::No Go tests were executed."
+            exit 1
+          fi
+
+          go build ./...
+
+      - name: Set up Node.js
+        if: inputs.runtime == 'node'
+        uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+        with:
+          node-version: '24.21.0'
+          package-manager-cache: false
+
+      - name: Check and test Node.js service
+        if: inputs.runtime == 'node'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$SERVICE_PATH"
+
+          npm ci --ignore-scripts
+          npm run check
+          npm test
+
+      - name: Set up .NET
+        if: inputs.runtime == 'dotnet'
+        uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d # v5.0.0
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore, check, build, and test cartservice
+        if: inputs.runtime == 'dotnet'
+        shell: bash
+        env:
+          DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+          DOTNET_NOLOGO: "true"
+        run: |
+          set -euo pipefail
+          cd "$SERVICE_PATH"
+
+          dotnet restore cartservice.sln
+
+          dotnet format cartservice.sln \
+            --verify-no-changes \
+            --no-restore
+
+          dotnet build cartservice.sln \
+            --configuration Release \
+            --no-restore
+
+          dotnet test tests/cartservice.tests.csproj \
+            --configuration Release \
+            --no-build \
+            --no-restore \
+            --logger "trx;LogFileName=cartservice.trx" \
+            --results-directory "$RUNNER_TEMP/avos-cart-tests"
+
+          python3 "$GITHUB_WORKSPACE/.github/scripts/verify-trx.py" \
+            "$RUNNER_TEMP/avos-cart-tests/cartservice.trx"
+
+      - name: Set up Java
+        if: inputs.runtime == 'java'
+        uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5.0.0
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Validate and test Java service
+        if: inputs.runtime == 'java'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cd "$SERVICE_PATH"
+
+          bash ./gradlew --no-daemon \
+            clean \
+            verifyGoogleJavaFormat \
+            check \
+            installDist
+
+      - name: Build local validation image
+        id: image
+        shell: bash
+        env:
+          BUILD_CONTEXT: ${{ steps.contract.outputs.context }}
+          DOCKERFILE: ${{ steps.contract.outputs.dockerfile }}
+          SOURCE_SHA: ${{ steps.contract.outputs.source-sha }}
+        run: bash .github/scripts/supply-chain/build-image.sh
+
+      - name: Test AVOS security policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover \
+            -s .github/scripts/security \
+            -p "test*.py" \
+            -v
+
+      - name: Install verified Trivy
+        shell: bash
+        run: bash .github/scripts/security/install-trivy.sh
+
+      - name: Scan service and built image
+        id: security
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ steps.contract.outputs.source-sha }}
+        run: bash .github/scripts/security/scan-service.sh
+
+      - name: Upload sanitized security reports
+        if: always() && steps.security.outcome != 'skipped'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: avos-security-${{ inputs.service-name }}
+          path: ${{ runner.temp }}/avos-security/${{ inputs.service-name }}/*.json
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Test supply-chain evidence validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover \
+            -s .github/scripts/supply-chain \
+            -p 'test*.py' \
+            -v
+
+      - name: Generate SBOM and build evidence
+        id: evidence
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ steps.contract.outputs.source-sha }}
+          DOCKERFILE: ${{ steps.contract.outputs.dockerfile }}
+        run: python3 .github/scripts/supply-chain/create-evidence.py
+
+      - name: Upload supply-chain evidence
+        if: always() && steps.image.outcome == 'success'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: avos-supply-chain-${{ inputs.service-name }}-${{ steps.contract.outputs.source-sha }}
+          path: ${{ runner.temp }}/avos-supply-chain/${{ inputs.service-name }}/
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Authenticate for ECR publication
+        id: aws_publication
+        if: >-
+          success() &&
+          steps.security.outcome == 'success' &&
+          steps.evidence.outcome == 'success' &&
+          github.repository == 'Gabinsime75/African-Vibe-Online-Shop-AVOS' &&
+          github.ref == 'refs/heads/main' &&
+          (github.event_name == 'push' ||
+           github.event_name == 'workflow_dispatch')
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: arn:aws:iam::396913735153:role/avos-dev-github-ci
+          aws-region: us-east-2
+          audience: sts.amazonaws.com
+          allowed-account-ids: '396913735153'
+          role-duration-seconds: 900
+          role-session-name: avos-${{ inputs.service-name }}-${{ github.run_id }}-${{ github.run_attempt }}
+          unset-current-credentials: true
+          retry-max-attempts: 2
+          inline-session-policy: >-
+            {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": "ecr:GetAuthorizationToken",
+                  "Resource": "*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "ecr:BatchCheckLayerAvailability",
+                    "ecr:BatchGetImage",
+                    "ecr:CompleteLayerUpload",
+                    "ecr:DescribeImages",
+                    "ecr:DescribeRepositories",
+                    "ecr:GetDownloadUrlForLayer",
+                    "ecr:InitiateLayerUpload",
+                    "ecr:PutImage",
+                    "ecr:UploadLayerPart"
+                  ],
+                  "Resource": "arn:aws:ecr:us-east-2:396913735153:repository/${{ inputs.ecr-repository }}"
+                }
+              ]
+            }
+
+      - name: Publish and verify ECR image
+        id: publication
+        if: success() && steps.aws_publication.outcome == 'success'
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ steps.contract.outputs.source-sha }}
+          LOCAL_IMAGE: ${{ steps.image.outputs.local-image }}
+          IMAGE_ID: ${{ steps.image.outputs.image-id }}
+        run: python3 .github/scripts/supply-chain/publish-image.py
+
+      - name: Upload publication evidence
+        if: always() && steps.publication.outcome == 'success'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: avos-publication-${{ inputs.service-name }}-${{ steps.contract.outputs.source-sha }}
+          path: ${{ runner.temp }}/avos-publication/${{ inputs.service-name }}/publication.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Record build summary
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ steps.contract.outputs.source-sha }}
+          IMAGE_TAG: ${{ steps.image.outputs.image-tag }}
+          LOCAL_IMAGE: ${{ steps.image.outputs.local-image }}
+          IMAGE_ID: ${{ steps.image.outputs.image-id }}
+          PUBLICATION_OUTCOME: ${{ steps.publication.outcome }}
+          PUBLISHED_IMAGE: ${{ steps.publication.outputs.image-uri }}
+          PUBLISHED_DIGEST: ${{ steps.publication.outputs.image-digest }}
+        run: |
+          {
+            echo "### AVOS container build"
+            echo ""
+            echo "- Service: $SERVICE_NAME"
+            echo "- Runtime: $SERVICE_RUNTIME"
+            echo "- Source commit: $SOURCE_SHA"
+            echo "- Image tag: $IMAGE_TAG"
+            echo "- Local image: $LOCAL_IMAGE"
+            echo "- Local configuration digest: $IMAGE_ID"
+            echo "- Intended ECR repository: $ECR_REPOSITORY"
+            if [[ "$PUBLICATION_OUTCOME" == "success" ]]; then
+              echo "- Published image: $PUBLISHED_IMAGE"
+              echo "- ECR manifest digest: $PUBLISHED_DIGEST"
+            else
+              echo "- Publication: not performed for this run"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,95 @@
+name: AVOS AWS OIDC Authentication
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'terraform/ci/**'
+      - '.github/workflows/avos-aws-oidc-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: avos-aws-oidc-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  authenticate:
+    name: Verify AWS OIDC identity
+    if: >-
+      github.repository == 'Gabinsime75/African-Vibe-Online-Shop-AVOS' &&
+      github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Authenticate through GitHub OIDC
+        id: aws_auth
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: arn:aws:iam::396913735153:role/avos-dev-github-ci
+          aws-region: us-east-2
+          audience: sts.amazonaws.com
+          allowed-account-ids: '396913735153'
+          role-duration-seconds: 900
+          role-session-name: avos-gh-${{ github.run_id }}-${{ github.run_attempt }}
+          unset-current-credentials: true
+          retry-max-attempts: 2
+
+      - name: Verify expected AWS identity
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          aws sts get-caller-identity \
+            --output json \
+            > "$RUNNER_TEMP/avos-oidc-identity.json"
+
+          python3 - <<'PYTHON'
+          import json
+          import os
+          from pathlib import Path
+
+          path = Path(os.environ["RUNNER_TEMP"]) / "avos-oidc-identity.json"
+          identity = json.loads(path.read_text(encoding="utf-8"))
+          session = (
+              "avos-gh-" + os.environ["GITHUB_RUN_ID"] +
+              "-" + os.environ["GITHUB_RUN_ATTEMPT"]
+          )
+          expected_arn = (
+              "arn:aws:sts::396913735153:"
+              "assumed-role/avos-dev-github-ci/" + session
+          )
+
+          if identity.get("Account") != "396913735153":
+              raise SystemExit("Unexpected AWS account")
+          if identity.get("Arn") != expected_arn:
+              raise SystemExit("Unexpected AWS role session")
+
+          print("PASS: GitHub OIDC authentication verified.")
+          print("Account:", identity["Account"])
+          print("Role session:", identity["Arn"])
+
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
+              summary.write("### AVOS AWS OIDC authentication\n\n")
+              summary.write("- Account: " + identity["Account"] + "\n")
+              summary.write("- Role session: " + identity["Arn"] + "\n")
+              summary.write("- Requested session duration: 900 seconds\n")
+              summary.write("- Authentication: GitHub OIDC\n")
+          PYTHON
+
+      - name: Upload authentication evidence
+        if: always() && steps.aws_auth.outcome == 'success'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: avos-oidc-identity-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/avos-oidc-identity.json
+          if-no-files-found: error
+          retention-days: 7

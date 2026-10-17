@@ -1,30 +1,33 @@
-# =============================================================================
-# CloudHustler Commerce Platform
-# Phase 8.1.2 - GitHub OIDC Authentication
-#
-# Purpose:
-# Establishes federated trust between GitHub Actions and AWS so workflows can
-# assume a short-lived IAM role without storing long-lived AWS access keys.
-# =============================================================================
+locals {
+  github_oidc_host = "token.actions.githubusercontent.com"
+
+  github_subject_prefix = "repo:Gabinsime75@115108532/African-Vibe-Online-Shop-AVOS@1368914543"
+
+  trusted_branches = ["main"]
+
+  trusted_subjects = [
+    for branch in local.trusted_branches :
+    "${local.github_subject_prefix}:ref:refs/heads/${branch}"
+  ]
+}
 
 resource "aws_iam_openid_connect_provider" "github" {
-  url = "https://token.actions.githubusercontent.com"
+  url = "https://${local.github_oidc_host}"
 
   client_id_list = [
     "sts.amazonaws.com"
   ]
 
-  tags = var.tags
+  tags = {
+    Name = "avos-github-actions"
+  }
 }
 
-data "aws_iam_policy_document" "github_actions_assume_role" {
+data "aws_iam_policy_document" "github_ci_trust" {
   statement {
-    sid    = "GitHubActionsOIDC"
-    effect = "Allow"
-
-    actions = [
-      "sts:AssumeRoleWithWebIdentity"
-    ]
+    sid     = "AVOSGitHubBranchAuthentication"
+    effect  = "Allow"
+    actions = ["sts:AssumeRoleWithWebIdentity"]
 
     principals {
       type = "Federated"
@@ -36,28 +39,25 @@ data "aws_iam_policy_document" "github_actions_assume_role" {
 
     condition {
       test     = "StringEquals"
-      variable = "token.actions.githubusercontent.com:aud"
-
-      values = [
-        "sts.amazonaws.com"
-      ]
+      variable = "${local.github_oidc_host}:aud"
+      values   = ["sts.amazonaws.com"]
     }
 
     condition {
       test     = "StringEquals"
-      variable = "token.actions.githubusercontent.com:sub"
-
-      values = [
-        "repo:${var.github_owner}/${var.github_repository}:ref:refs/heads/${var.github_branch}"
-      ]
+      variable = "${local.github_oidc_host}:sub"
+      values   = local.trusted_subjects
     }
   }
 }
 
-resource "aws_iam_role" "github_actions_ci" {
-  name = "${var.project_name}-${var.environment}-github-actions-ci"
+resource "aws_iam_role" "github_ci" {
+  name                 = "avos-dev-github-ci"
+  description          = "AVOS GitHub Actions CI authentication through OIDC"
+  assume_role_policy   = data.aws_iam_policy_document.github_ci_trust.json
+  max_session_duration = 3600
 
-  assume_role_policy = data.aws_iam_policy_document.github_actions_assume_role.json
-
-  tags = var.tags
+  tags = {
+    Name = "avos-dev-github-ci"
+  }
 }

@@ -14,6 +14,11 @@
 
 FROM --platform=$BUILDPLATFORM python:3.14.2-alpine@sha256:7af51ebeb83610fb69d633d5c61a2efb87efa4caf66b59862d624bb6ef788345 AS base
 
+RUN apk add --no-cache --upgrade \
+    "libcrypto3>=3.5.6-r0" \
+    "libssl3>=3.5.6-r0"
+
+
 FROM base AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1

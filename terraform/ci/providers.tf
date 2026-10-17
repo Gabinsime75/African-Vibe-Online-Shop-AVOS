@@ -1,13 +1,13 @@
-# =============================================================================
-# CloudHustler Commerce Platform
-# Phase 8 - CI Infrastructure
-# AWS Provider
-# =============================================================================
-
 provider "aws" {
-  region = var.aws_region
+  region              = "us-east-2"
+  allowed_account_ids = ["396913735153"]
 
   default_tags {
-    tags = var.tags
+    tags = {
+      Project     = "AVOS"
+      Environment = "dev"
+      ManagedBy   = "Terraform"
+      Component   = "CISupplyChain"
+    }
   }
 }

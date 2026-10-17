@@ -3,6 +3,11 @@
 
 FROM python:3.14.2-alpine AS dependencies
 
+RUN apk add --no-cache --upgrade \
+    "libcrypto3>=3.5.6-r0" \
+    "libssl3>=3.5.6-r0"
+
+
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PIP_NO_CACHE_DIR=1
 
@@ -12,6 +17,11 @@ COPY requirements.txt .
 RUN python -m pip install --prefix=/install/packages -r requirements.txt
 
 FROM python:3.14.2-alpine
+
+RUN apk add --no-cache --upgrade \
+    "libcrypto3>=3.5.6-r0" \
+    "libssl3>=3.5.6-r0"
+
 
 LABEL org.opencontainers.image.title="AVOS Load Generator" \
       org.opencontainers.image.description="Locust traffic generator for African Vibe Online Shop" \

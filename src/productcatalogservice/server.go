@@ -44,7 +44,6 @@ var (
 	extraLatency time.Duration
 
 	port = "3550"
-
 )
 
 func init() {

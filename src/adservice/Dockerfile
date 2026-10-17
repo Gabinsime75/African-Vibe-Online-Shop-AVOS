@@ -27,6 +27,12 @@ RUN ./gradlew --no-daemon installDist
 
 FROM eclipse-temurin:25.0.1_8-jre-alpine@sha256:b51543f89580c1ba70e441cfbc0cfc1635c3c16d2e2d77fec9d890342a3a8687
 
+RUN apk add --no-cache --upgrade \
+    "libcrypto3>=3.5.6-r0" \
+    "libssl3>=3.5.6-r0" \
+    "openssl>=3.5.6-r0"
+
+
 LABEL org.opencontainers.image.title="AVOS Ad Service" \
       org.opencontainers.image.description="Contextual advertisement gRPC service for African Vibe Online Shop" \
       org.opencontainers.image.source="https://github.com/Gabinsime75/African-Vibe-Online-Shop-AVOS"
