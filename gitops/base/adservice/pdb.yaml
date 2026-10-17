@@ -1,0 +1,12 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: adservice
+  labels:
+    app.kubernetes.io/name: adservice
+    app.kubernetes.io/part-of: avos
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: adservice
