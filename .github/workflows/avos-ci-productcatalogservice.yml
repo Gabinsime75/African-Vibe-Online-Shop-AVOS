@@ -2,13 +2,6 @@ name: AVOS CI - productcatalogservice
 
 on:
   pull_request:
-    paths:
-      - 'src/productcatalogservice/**'
-      - 'protos/**'
-      - '.github/scripts/**'
-      - '.github/policies/image-verification.json'
-      - '.github/workflows/avos-service-ci.yml'
-      - '.github/workflows/avos-ci-productcatalogservice.yml'
   push:
     branches:
       - main

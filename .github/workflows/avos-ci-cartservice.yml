@@ -2,13 +2,6 @@ name: AVOS CI - cartservice
 
 on:
   pull_request:
-    paths:
-      - 'src/cartservice/**'
-      - 'protos/**'
-      - '.github/scripts/**'
-      - '.github/policies/image-verification.json'
-      - '.github/workflows/avos-service-ci.yml'
-      - '.github/workflows/avos-ci-cartservice.yml'
   push:
     branches:
       - main

@@ -2,13 +2,6 @@ name: AVOS CI - checkoutservice
 
 on:
   pull_request:
-    paths:
-      - 'src/checkoutservice/**'
-      - 'protos/**'
-      - '.github/scripts/**'
-      - '.github/policies/image-verification.json'
-      - '.github/workflows/avos-service-ci.yml'
-      - '.github/workflows/avos-ci-checkoutservice.yml'
   push:
     branches:
       - main

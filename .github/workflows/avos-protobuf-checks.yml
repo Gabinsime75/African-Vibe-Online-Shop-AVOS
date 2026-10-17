@@ -2,15 +2,6 @@ name: AVOS Protobuf Checks
 
 on:
   pull_request:
-    paths:
-      - 'protos/**'
-      - 'src/**/*.pb.go'
-      - 'src/**/*_pb2.py'
-      - 'src/**/*_pb2_grpc.py'
-      - '.github/scripts/protobuf/**'
-      - 'src/**/*.proto'
-      - 'src/**/buf.yaml'
-      - '.github/workflows/avos-protobuf-checks.yml'
   push:
     branches:
       - main
