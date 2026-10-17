@@ -387,6 +387,32 @@ jobs:
           IMAGE_ID: ${{ steps.image.outputs.image-id }}
         run: python3 .github/scripts/supply-chain/publish-image.py
 
+      - name: Install verified Cosign
+        if: success() && steps.publication.outcome == 'success'
+        shell: bash
+        run: bash .github/scripts/supply-chain/install-cosign.sh
+
+      - name: Sign and verify published image
+        id: signing
+        if: success() && steps.publication.outcome == 'success'
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ steps.contract.outputs.source-sha }}
+          IMAGE_ID: ${{ steps.image.outputs.image-id }}
+        run: python3 .github/scripts/supply-chain/sign-image.py
+
+      - name: Upload image signing evidence
+        if: >-
+          always() &&
+          (steps.signing.outcome == 'success' ||
+           steps.signing.outcome == 'failure')
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: avos-signing-${{ inputs.service-name }}-${{ steps.contract.outputs.source-sha }}
+          path: ${{ runner.temp }}/avos-signing/${{ inputs.service-name }}/
+          if-no-files-found: warn
+          retention-days: 7
+
       - name: Upload publication evidence
         if: always() && steps.publication.outcome == 'success'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -404,6 +430,7 @@ jobs:
           LOCAL_IMAGE: ${{ steps.image.outputs.local-image }}
           IMAGE_ID: ${{ steps.image.outputs.image-id }}
           PUBLICATION_OUTCOME: ${{ steps.publication.outcome }}
+          SIGNING_OUTCOME: ${{ steps.signing.outcome }}
           PUBLISHED_IMAGE: ${{ steps.publication.outputs.image-uri }}
           PUBLISHED_DIGEST: ${{ steps.publication.outputs.image-digest }}
         run: |
@@ -420,6 +447,7 @@ jobs:
             if [[ "$PUBLICATION_OUTCOME" == "success" ]]; then
               echo "- Published image: $PUBLISHED_IMAGE"
               echo "- ECR manifest digest: $PUBLISHED_DIGEST"
+              echo "- Signing and verification: $SIGNING_OUTCOME"
             else
               echo "- Publication: not performed for this run"
             fi

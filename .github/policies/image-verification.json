@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "registry": "396913735153.dkr.ecr.us-east-2.amazonaws.com",
+  "repository_prefix": "avos/dev/",
+  "services": [
+    "adservice",
+    "cartservice",
+    "checkoutservice",
+    "currencyservice",
+    "emailservice",
+    "frontend",
+    "loadgenerator",
+    "paymentservice",
+    "productcatalogservice",
+    "recommendationservice",
+    "shippingservice",
+    "shoppingassistantservice"
+  ],
+  "certificate_identity": "https://github.com/Gabinsime75/African-Vibe-Online-Shop-AVOS/.github/workflows/avos-service-ci.yml@refs/heads/main",
+  "certificate_oidc_issuer": "https://token.actions.githubusercontent.com",
+  "require_digest_reference": true,
+  "require_workflow_commit": true
+}
