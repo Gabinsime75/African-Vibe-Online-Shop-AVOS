@@ -6,6 +6,7 @@ on:
       - 'src/shippingservice/**'
       - 'protos/**'
       - '.github/scripts/**'
+      - '.github/policies/image-verification.json'
       - '.github/workflows/avos-service-ci.yml'
       - '.github/workflows/avos-ci-shippingservice.yml'
   push:
@@ -15,6 +16,7 @@ on:
       - 'src/shippingservice/**'
       - 'protos/**'
       - '.github/scripts/**'
+      - '.github/policies/image-verification.json'
       - '.github/workflows/avos-service-ci.yml'
       - '.github/workflows/avos-ci-shippingservice.yml'
   workflow_dispatch:
