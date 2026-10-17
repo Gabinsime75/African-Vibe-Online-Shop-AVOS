@@ -23,6 +23,15 @@ on:
       source-sha:
         description: Commit checked out and built
         value: ${{ jobs.build.outputs.source-sha }}
+      image-tag:
+        description: Full source SHA used as the image tag
+        value: ${{ jobs.build.outputs.image-tag }}
+      local-image:
+        description: Local reference of the built image
+        value: ${{ jobs.build.outputs.local-image }}
+      image-id:
+        description: Verified local image configuration digest
+        value: ${{ jobs.build.outputs.image-id }}
 
 permissions:
   contents: read
@@ -34,6 +43,9 @@ jobs:
     timeout-minutes: 30
     outputs:
       source-sha: ${{ steps.contract.outputs.source-sha }}
+      image-tag: ${{ steps.image.outputs.image-tag }}
+      local-image: ${{ steps.image.outputs.local-image }}
+      image-id: ${{ steps.image.outputs.image-id }}
     env:
       SERVICE_NAME: ${{ inputs.service-name }}
       SERVICE_PATH: ${{ inputs.service-path }}
@@ -306,6 +318,9 @@ jobs:
         shell: bash
         env:
           SOURCE_SHA: ${{ steps.contract.outputs.source-sha }}
+          IMAGE_TAG: ${{ steps.image.outputs.image-tag }}
+          LOCAL_IMAGE: ${{ steps.image.outputs.local-image }}
+          IMAGE_ID: ${{ steps.image.outputs.image-id }}
         run: |
           {
             echo "### AVOS container build"
@@ -313,6 +328,9 @@ jobs:
             echo "- Service: $SERVICE_NAME"
             echo "- Runtime: $SERVICE_RUNTIME"
             echo "- Source commit: $SOURCE_SHA"
+            echo "- Image tag: $IMAGE_TAG"
+            echo "- Local image: $LOCAL_IMAGE"
+            echo "- Local configuration digest: $IMAGE_ID"
             echo "- Intended ECR repository: $ECR_REPOSITORY"
             echo "- Publication: not enabled"
           } >> "$GITHUB_STEP_SUMMARY"
