@@ -2,11 +2,6 @@ name: AVOS Infrastructure Security
 
 on:
   pull_request:
-    paths:
-      - 'terraform/**'
-      - 'gitops/**'
-      - '.github/scripts/security/**'
-      - '.github/workflows/avos-infrastructure-security.yml'
   push:
     branches:
       - main

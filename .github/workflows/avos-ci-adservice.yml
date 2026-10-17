@@ -2,13 +2,6 @@ name: AVOS CI - adservice
 
 on:
   pull_request:
-    paths:
-      - 'src/adservice/**'
-      - 'protos/**'
-      - '.github/scripts/**'
-      - '.github/policies/image-verification.json'
-      - '.github/workflows/avos-service-ci.yml'
-      - '.github/workflows/avos-ci-adservice.yml'
   push:
     branches:
       - main
