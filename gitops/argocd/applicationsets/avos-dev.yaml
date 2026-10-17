@@ -1,0 +1,51 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: avos-dev-services
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: avos
+    environment: dev
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+spec:
+  goTemplate: true
+  goTemplateOptions:
+    - missingkey=error
+  generators:
+    - git:
+        repoURL: https://github.com/Gabinsime75/African-Vibe-Online-Shop-AVOS.git
+        revision: main
+        directories:
+          - path: gitops/overlays/dev/frontend
+          - path: gitops/overlays/dev/productcatalogservice
+          - path: gitops/overlays/dev/cartservice
+          - path: gitops/overlays/dev/checkoutservice
+          - path: gitops/overlays/dev/currencyservice
+          - path: gitops/overlays/dev/paymentservice
+          - path: gitops/overlays/dev/shippingservice
+          - path: gitops/overlays/dev/emailservice
+          - path: gitops/overlays/dev/recommendationservice
+          - path: gitops/overlays/dev/adservice
+          - path: gitops/overlays/dev/shoppingassistantservice
+  template:
+    metadata:
+      name: 'avos-dev-{{ .path.basename }}'
+      labels:
+        app.kubernetes.io/part-of: avos
+        environment: dev
+        avos-service: '{{ .path.basename }}'
+    spec:
+      project: avos-dev
+      source:
+        repoURL: https://github.com/Gabinsime75/African-Vibe-Online-Shop-AVOS.git
+        targetRevision: main
+        path: '{{ .path.path }}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: avos-dev
+      syncPolicy:
+        syncOptions:
+          - FailOnSharedResource=true
+  syncPolicy:
+    preserveResourcesOnDeletion: true
