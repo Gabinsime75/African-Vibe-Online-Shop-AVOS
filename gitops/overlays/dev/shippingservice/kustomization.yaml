@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: avos-dev
+resources:
+  - ../../../base/shippingservice
+images:
+  - name: shippingservice
+    newName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/shippingservice
+    newTag: fb60a25b895b838e82532b1e484ef93a73e73fad
+replicas:
+  - name: shippingservice
+    count: 1
