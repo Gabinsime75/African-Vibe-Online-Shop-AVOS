@@ -1,0 +1,122 @@
+{
+  "apiVersion": "batch/v1",
+  "kind": "CronJob",
+  "metadata": {
+    "name": "loadgenerator",
+    "labels": {
+      "app.kubernetes.io/name": "loadgenerator",
+      "app.kubernetes.io/part-of": "avos"
+    }
+  },
+  "spec": {
+    "schedule": "0 0 1 1 *",
+    "suspend": true,
+    "concurrencyPolicy": "Forbid",
+    "successfulJobsHistoryLimit": 1,
+    "failedJobsHistoryLimit": 1,
+    "jobTemplate": {
+      "spec": {
+        "backoffLimit": 0,
+        "activeDeadlineSeconds": 180,
+        "ttlSecondsAfterFinished": 86400,
+        "template": {
+          "metadata": {
+            "labels": {
+              "app.kubernetes.io/name": "loadgenerator",
+              "app.kubernetes.io/part-of": "avos"
+            }
+          },
+          "spec": {
+            "serviceAccountName": "loadgenerator",
+            "automountServiceAccountToken": false,
+            "restartPolicy": "Never",
+            "terminationGracePeriodSeconds": 15,
+            "securityContext": {
+              "runAsNonRoot": true,
+              "runAsUser": 1000,
+              "runAsGroup": 1000,
+              "fsGroup": 1000,
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
+            },
+            "containers": [
+              {
+                "name": "loadgenerator",
+                "image": "loadgenerator:fb60a25b895b838e82532b1e484ef93a73e73fad",
+                "imagePullPolicy": "IfNotPresent",
+                "env": [
+                  {
+                    "name": "FRONTEND_ADDR",
+                    "value": "http://frontend:8080"
+                  },
+                  {
+                    "name": "USERS",
+                    "value": "3"
+                  },
+                  {
+                    "name": "RATE",
+                    "value": "1"
+                  },
+                  {
+                    "name": "RUN_TIME",
+                    "value": "60s"
+                  },
+                  {
+                    "name": "MIN_WAIT_SECONDS",
+                    "value": "1"
+                  },
+                  {
+                    "name": "MAX_WAIT_SECONDS",
+                    "value": "3"
+                  },
+                  {
+                    "name": "LOCUST_RANDOM_SEED",
+                    "value": "avos-phase-8"
+                  },
+                  {
+                    "name": "LOCUST_LOGLEVEL",
+                    "value": "INFO"
+                  }
+                ],
+                "resources": {
+                  "requests": {
+                    "cpu": "100m",
+                    "memory": "128Mi"
+                  },
+                  "limits": {
+                    "cpu": "500m",
+                    "memory": "256Mi"
+                  }
+                },
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "readOnlyRootFilesystem": true,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  }
+                },
+                "volumeMounts": [
+                  {
+                    "name": "temporary-files",
+                    "mountPath": "/tmp"
+                  }
+                ]
+              }
+            ],
+            "volumes": [
+              {
+                "name": "temporary-files",
+                "emptyDir": {
+                  "sizeLimit": "64Mi"
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}
