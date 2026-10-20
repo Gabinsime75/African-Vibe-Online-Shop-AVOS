@@ -99,3 +99,5 @@ The future GitOps phase cannot be approved until:
 - Image Updater writes immutable image references to Git and Argo CD reconciles them.
 - Production cart workloads use the managed Redis endpoint rather than an in-cluster Redis deployment.
 - Drift detection, rollback, and failed-sync behavior are validated.
+
+[Environment promotion policy](ENVIRONMENT-PROMOTION.md)
