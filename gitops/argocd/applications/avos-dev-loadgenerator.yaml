@@ -1,29 +1,31 @@
-{
-  "apiVersion": "argoproj.io/v1alpha1",
-  "kind": "Application",
-  "metadata": {
-    "name": "avos-dev-loadgenerator",
-    "namespace": "argocd",
-    "labels": {
-      "app.kubernetes.io/part-of": "avos",
-      "environment": "dev"
-    }
-  },
-  "spec": {
-    "project": "avos-dev",
-    "source": {
-      "repoURL": "https://github.com/Gabinsime75/African-Vibe-Online-Shop-AVOS.git",
-      "targetRevision": "main",
-      "path": "gitops/overlays/dev/loadgenerator"
-    },
-    "destination": {
-      "server": "https://kubernetes.default.svc",
-      "namespace": "avos-dev"
-    },
-    "syncPolicy": {
-      "syncOptions": [
-        "FailOnSharedResource=true"
-      ]
-    }
-  }
-}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  labels:
+    app.kubernetes.io/part-of: avos
+    environment: dev
+  name: avos-dev-loadgenerator
+  namespace: argocd
+spec:
+  destination:
+    namespace: avos-dev
+    server: https://kubernetes.default.svc
+  project: avos-dev
+  source:
+    path: gitops/overlays/dev/loadgenerator
+    repoURL: https://github.com/Gabinsime75/African-Vibe-Online-Shop-AVOS.git
+    targetRevision: main
+  syncPolicy:
+    automated:
+      allowEmpty: false
+      prune: true
+      selfHeal: true
+    retry:
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+      limit: 5
+    syncOptions:
+    - FailOnSharedResource=true
+    - PruneLast=true

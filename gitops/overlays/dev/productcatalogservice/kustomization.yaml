@@ -2,11 +2,13 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: avos-dev
 resources:
-  - ../../../base/productcatalogservice
+- ../../../base/productcatalogservice
 images:
-  - name: productcatalogservice
-    newName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/productcatalogservice
-    newTag: fb60a25b895b838e82532b1e484ef93a73e73fad
+- name: productcatalogservice
+  newName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/productcatalogservice
+  newTag: fb60a25b895b838e82532b1e484ef93a73e73fad
 replicas:
-  - name: productcatalogservice
-    count: 1
+- name: productcatalogservice
+  count: 1
+components:
+- ../../../components/dev-reconciliation
