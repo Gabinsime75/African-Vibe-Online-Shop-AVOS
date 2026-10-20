@@ -68,6 +68,7 @@ data "aws_iam_policy_document" "image_updater_ecr" {
     actions = [
       "ecr:BatchGetImage",
       "ecr:DescribeImages",
+      "ecr:ListImages",
       "ecr:GetDownloadUrlForLayer"
     ]
 
