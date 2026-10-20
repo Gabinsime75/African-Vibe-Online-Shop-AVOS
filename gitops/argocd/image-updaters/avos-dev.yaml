@@ -1,0 +1,25 @@
+apiVersion: argocd-image-updater.argoproj.io/v1alpha1
+kind: ImageUpdater
+metadata:
+  name: avos-dev
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: avos
+    environment: dev
+spec:
+  writeBackConfig:
+    method: git:secret:argocd/avos-image-updater-git
+    gitConfig:
+      branch: "main:image-updater/dev-{{.SHA256}}"
+      writeBackTarget: kustomization
+  applicationRefs:
+    - namePattern: avos-dev-frontend
+      images:
+        - alias: frontend
+          imageName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/frontend
+          commonUpdateSettings:
+            updateStrategy: newest-build
+            allowTags: "regexp:^[0-9a-f]{40}$"
+          manifestTargets:
+            kustomize:
+              name: frontend

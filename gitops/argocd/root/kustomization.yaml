@@ -4,3 +4,4 @@ resources:
   - ../projects
   - ../applicationsets
   - ../applications
+  - ../image-updaters
