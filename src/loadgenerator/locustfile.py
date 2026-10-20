@@ -10,7 +10,7 @@ import os
 import random
 
 from faker import Faker
-from locust import FastHttpUser, between, task
+from locust import FastHttpUser, between, events, task
 
 
 DEFAULT_PRODUCTS = (
@@ -60,10 +60,11 @@ if seed:
 class AVOSShopper(FastHttpUser):
     """Models a customer browsing products, managing a cart, and checking out."""
 
+    default_headers = {"User-Agent": "AVOS-LoadGenerator/1.0"}
+
     wait_time = between(MIN_WAIT_SECONDS, MAX_WAIT_SECONDS)
 
     def on_start(self):
-        self.client.headers.update({"User-Agent": "AVOS-LoadGenerator/1.0"})
         self.client.get("/", name="GET /")
 
     def open_product(self, product_id=None):
@@ -131,3 +132,12 @@ class AVOSShopper(FastHttpUser):
             },
             name="POST /cart/checkout",
         )
+
+
+@events.quitting.add_listener
+def validate_run(environment, **kwargs):
+    """Reject empty runs, failed requests, and user-code exceptions."""
+    total = environment.stats.total
+    exceptions = getattr(environment.runner, "exceptions", {})
+    if total.num_requests == 0 or total.num_failures > 0 or exceptions:
+        environment.process_exit_code = 1
