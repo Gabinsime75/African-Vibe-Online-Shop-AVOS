@@ -1,125 +1,126 @@
 apiVersion: argocd-image-updater.argoproj.io/v1alpha1
 kind: ImageUpdater
 metadata:
-  name: avos-dev
-  namespace: argocd
   labels:
     app.kubernetes.io/part-of: avos
     environment: dev
+  name: avos-dev
+  namespace: argocd
 spec:
-  writeBackConfig:
-    method: git:secret:argocd/avos-image-updater-git
-    gitConfig:
-      branch: main:image-updater/dev-{{.SHA256}}
-      writeBackTarget: kustomization
   applicationRefs:
-  - namePattern: avos-dev-frontend
-    images:
+  - images:
     - alias: frontend
-      imageName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/frontend
       commonUpdateSettings:
-        updateStrategy: newest-build
         allowTags: regexp:^[0-9a-f]{40}$
+        updateStrategy: newest-build
+      imageName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/frontend
       manifestTargets:
         kustomize:
           name: frontend
-  - namePattern: avos-dev-adservice
-    images:
+    namePattern: avos-dev-frontend
+  - images:
     - alias: adservice
-      imageName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/adservice
       commonUpdateSettings:
-        updateStrategy: newest-build
         allowTags: regexp:^[0-9a-f]{40}$
+        updateStrategy: newest-build
+      imageName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/adservice
       manifestTargets:
         kustomize:
           name: adservice
-  - namePattern: avos-dev-cartservice
-    images:
+    namePattern: avos-dev-adservice
+  - images:
     - alias: cartservice
-      imageName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/cartservice
       commonUpdateSettings:
-        updateStrategy: newest-build
         allowTags: regexp:^[0-9a-f]{40}$
+        updateStrategy: newest-build
+      imageName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/cartservice
       manifestTargets:
         kustomize:
           name: cartservice
-  - namePattern: avos-dev-checkoutservice
-    images:
+    namePattern: avos-dev-cartservice
+  - images:
     - alias: checkoutservice
-      imageName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/checkoutservice
       commonUpdateSettings:
-        updateStrategy: newest-build
         allowTags: regexp:^[0-9a-f]{40}$
+        updateStrategy: newest-build
+      imageName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/checkoutservice
       manifestTargets:
         kustomize:
           name: checkoutservice
-  - namePattern: avos-dev-currencyservice
-    images:
+    namePattern: avos-dev-checkoutservice
+  - images:
     - alias: currencyservice
-      imageName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/currencyservice
       commonUpdateSettings:
-        updateStrategy: newest-build
         allowTags: regexp:^[0-9a-f]{40}$
+        updateStrategy: newest-build
+      imageName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/currencyservice
       manifestTargets:
         kustomize:
           name: currencyservice
-  - namePattern: avos-dev-emailservice
-    images:
+    namePattern: avos-dev-currencyservice
+  - images:
     - alias: emailservice
-      imageName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/emailservice
       commonUpdateSettings:
-        updateStrategy: newest-build
         allowTags: regexp:^[0-9a-f]{40}$
+        updateStrategy: newest-build
+      imageName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/emailservice
       manifestTargets:
         kustomize:
           name: emailservice
-  - namePattern: avos-dev-paymentservice
-    images:
+    namePattern: avos-dev-emailservice
+  - images:
     - alias: paymentservice
-      imageName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/paymentservice
       commonUpdateSettings:
-        updateStrategy: newest-build
         allowTags: regexp:^[0-9a-f]{40}$
+        updateStrategy: newest-build
+      imageName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/paymentservice
       manifestTargets:
         kustomize:
           name: paymentservice
-  - namePattern: avos-dev-productcatalogservice
-    images:
+    namePattern: avos-dev-paymentservice
+  - images:
     - alias: productcatalogservice
-      imageName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/productcatalogservice
       commonUpdateSettings:
-        updateStrategy: newest-build
         allowTags: regexp:^[0-9a-f]{40}$
+        updateStrategy: newest-build
+      imageName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/productcatalogservice
       manifestTargets:
         kustomize:
           name: productcatalogservice
-  - namePattern: avos-dev-recommendationservice
-    images:
+    namePattern: avos-dev-productcatalogservice
+  - images:
     - alias: recommendationservice
-      imageName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/recommendationservice
       commonUpdateSettings:
-        updateStrategy: newest-build
         allowTags: regexp:^[0-9a-f]{40}$
+        updateStrategy: newest-build
+      imageName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/recommendationservice
       manifestTargets:
         kustomize:
           name: recommendationservice
-  - namePattern: avos-dev-shippingservice
-    images:
+    namePattern: avos-dev-recommendationservice
+  - images:
     - alias: shippingservice
-      imageName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/shippingservice
       commonUpdateSettings:
-        updateStrategy: newest-build
         allowTags: regexp:^[0-9a-f]{40}$
+        updateStrategy: newest-build
+      imageName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/shippingservice
       manifestTargets:
         kustomize:
           name: shippingservice
-  - namePattern: avos-dev-loadgenerator
-    images:
+    namePattern: avos-dev-shippingservice
+  - images:
     - alias: loadgenerator
-      imageName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/loadgenerator
       commonUpdateSettings:
-        updateStrategy: newest-build
         allowTags: regexp:^[0-9a-f]{40}$
+        forceUpdate: true
+        updateStrategy: newest-build
+      imageName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/loadgenerator
       manifestTargets:
         kustomize:
           name: loadgenerator
+    namePattern: avos-dev-loadgenerator
+  writeBackConfig:
+    gitConfig:
+      branch: main:image-updater/dev-{{.SHA256}}
+      writeBackTarget: kustomization
+    method: git:secret:argocd/avos-image-updater-git
