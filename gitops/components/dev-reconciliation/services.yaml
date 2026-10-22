@@ -1,0 +1,13 @@
+apiVersion: builtin
+kind: AnnotationsTransformer
+metadata:
+  name: avos-services-wave
+annotations:
+  argocd.argoproj.io/sync-wave: '-10'
+fieldSpecs:
+- kind: Service
+  path: metadata/annotations
+  create: true
+- kind: PodDisruptionBudget
+  path: metadata/annotations
+  create: true

@@ -1,0 +1,19 @@
+apiVersion: builtin
+kind: AnnotationsTransformer
+metadata:
+  name: avos-prerequisites-wave
+annotations:
+  argocd.argoproj.io/sync-wave: '-20'
+fieldSpecs:
+- kind: ServiceAccount
+  path: metadata/annotations
+  create: true
+- kind: ConfigMap
+  path: metadata/annotations
+  create: true
+- kind: NetworkPolicy
+  path: metadata/annotations
+  create: true
+- kind: ExternalSecret
+  path: metadata/annotations
+  create: true

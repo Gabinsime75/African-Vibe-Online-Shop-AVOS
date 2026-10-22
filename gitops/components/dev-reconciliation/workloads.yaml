@@ -1,0 +1,16 @@
+apiVersion: builtin
+kind: AnnotationsTransformer
+metadata:
+  name: avos-workloads-wave
+annotations:
+  argocd.argoproj.io/sync-wave: '0'
+fieldSpecs:
+- kind: Deployment
+  path: metadata/annotations
+  create: true
+- kind: CronJob
+  path: metadata/annotations
+  create: true
+- kind: HorizontalPodAutoscaler
+  path: metadata/annotations
+  create: true

@@ -1,26 +1,19 @@
-{
-  "apiVersion": "kustomize.config.k8s.io/v1beta1",
-  "kind": "Kustomization",
-  "namespace": "avos-dev",
-  "resources": [
-    "../../../base/cartservice"
-  ],
-  "images": [
-    {
-      "name": "cartservice",
-      "newName": "396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/cartservice",
-      "newTag": "fb60a25b895b838e82532b1e484ef93a73e73fad"
-    }
-  ],
-  "replicas": [
-    {
-      "name": "cartservice",
-      "count": 1
-    }
-  ],
-  "patches": [
-    {
-      "patch": "{\"apiVersion\": \"apps/v1\", \"kind\": \"Deployment\", \"metadata\": {\"name\": \"cartservice\"}, \"spec\": {\"template\": {\"spec\": {\"containers\": [{\"name\": \"cartservice\", \"env\": [{\"name\": \"ASPNETCORE_ENVIRONMENT\", \"value\": \"Development\"}, {\"name\": \"CART_STORE\", \"value\": \"memory\"}]}]}}}}"
-    }
-  ]
-}
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: avos-dev
+resources:
+- ../../../base/cartservice
+images:
+- name: cartservice
+  newName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/cartservice
+  newTag: fb60a25b895b838e82532b1e484ef93a73e73fad
+replicas:
+- name: cartservice
+  count: 1
+patches:
+- patch: '{"apiVersion": "apps/v1", "kind": "Deployment", "metadata": {"name": "cartservice"},
+    "spec": {"template": {"spec": {"containers": [{"name": "cartservice", "env": [{"name":
+    "ASPNETCORE_ENVIRONMENT", "value": "Development"}, {"name": "CART_STORE", "value":
+    "memory"}]}]}}}}'
+components:
+- ../../../components/dev-reconciliation

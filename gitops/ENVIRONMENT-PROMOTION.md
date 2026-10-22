@@ -11,7 +11,9 @@ Argo CD reconciles merged Git configuration into Kubernetes.
 Development runs in the existing sandbox account in us-east-2.
 Image Updater writes service-overlay changes to generated branches.
 A pull request targets main, passes the required checks, and is merged.
-Applications currently synchronize manually; step 8.9 defines sync policy.
+Development workload Applications automatically reconcile merged changes,
+with pruning, self-healing, empty-application protection, and bounded retries.
+The administrative root Application remains manually synchronized.
 
 Main requires pull requests and up-to-date status checks, including for
 administrators. Its current required approving-review count is zero.
