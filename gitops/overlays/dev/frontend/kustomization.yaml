@@ -2,9 +2,9 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 components:
 - ../../../components/dev-reconciliation
 images:
-- digest: sha256:57dc5207a6d8659697621a959bc030f34c6df1da0704d48aa797acc0dce4eb5d
-  name: frontend
+- name: frontend
   newName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/frontend
+  newTag: bda242d9e6257bab22689042c3c40e977177f75e
 kind: Kustomization
 namespace: avos-dev
 replicas:
