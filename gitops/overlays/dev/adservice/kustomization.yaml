@@ -6,7 +6,7 @@ resources:
 images:
 - name: adservice
   newName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/adservice
-  newTag: fb60a25b895b838e82532b1e484ef93a73e73fad
+  newTag: 7e0feaf61c7be02a7c21c452da3f19378417572e
 replicas:
 - name: adservice
   count: 1
