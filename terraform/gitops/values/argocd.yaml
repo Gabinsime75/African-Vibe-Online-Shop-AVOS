@@ -70,4 +70,73 @@ dex:
   enabled: false
 
 notifications:
-  enabled: false
+  enabled: true
+
+  secret:
+    create: false
+    name: argocd-notifications-secret
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+  notifiers:
+    service.email: |
+      host: smtp.mail.yahoo.com
+      port: 587
+      username: $email-username
+      password: $email-password
+      from: gabinsime@yahoo.com
+
+  subscriptions:
+    - recipients:
+        - email:gabinsime@yahoo.com
+      selector: app.kubernetes.io/part-of=avos
+      triggers:
+        - on-avos-out-of-sync
+        - on-avos-sync-failed
+
+  templates:
+    template.avos-state-mismatch: |
+      email:
+        subject: "[AVOS dev] {{.app.metadata.name}} is OutOfSync"
+      message: |
+        Application: {{.app.metadata.name}}
+        Namespace: {{.app.spec.destination.namespace}}
+        Sync status: {{.app.status.sync.status}}
+        Health: {{.app.status.health.status}}
+        Git revision: {{.app.status.sync.revision}}
+
+        Live resources differ from Git desired state.
+        Check for a pending Git deployment or a manual cluster change.
+        Development workloads have automatic self-healing enabled.
+        The administrative root requires manual synchronization.
+
+    template.avos-sync-failed: |
+      email:
+        subject: "[AVOS dev] {{.app.metadata.name}} synchronization failed"
+      message: |
+        Application: {{.app.metadata.name}}
+        Phase: {{.app.status.operationState.phase}}
+        Message: {{.app.status.operationState.message}}
+        Git revision: {{.app.status.sync.revision}}
+
+        Inspect the Argo CD operation and resource errors.
+
+  triggers:
+    trigger.on-avos-out-of-sync: |
+      - description: Git desired state differs from live resources.
+        when: app.status.sync.status == 'OutOfSync'
+        send:
+          - avos-state-mismatch
+
+    trigger.on-avos-sync-failed: |
+      - description: A synchronization operation failed.
+        when: app.status?.operationState?.phase in ['Error', 'Failed']
+        oncePer: app.status.operationState.startedAt
+        send:
+          - avos-sync-failed
