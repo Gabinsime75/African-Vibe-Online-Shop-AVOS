@@ -6,7 +6,7 @@ resources:
 images:
 - name: frontend
   newName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/frontend
-  newTag: 258f44877da3f9039f7a94b458b0aa6aaee75ebb
+  newTag: 7e0feaf61c7be02a7c21c452da3f19378417572e
 replicas:
 - name: frontend
   count: 1
