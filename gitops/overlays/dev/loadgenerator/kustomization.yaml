@@ -6,6 +6,6 @@ resources:
 images:
 - name: loadgenerator
   newName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/loadgenerator
-  newTag: 86dd47d436e39c90fb95bb346a2ef459a1278834
+  newTag: 2cc4f31643516d1f66e6efdea71e6dd828112a69
 components:
 - ../../../components/dev-reconciliation
