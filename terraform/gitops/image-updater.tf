@@ -12,8 +12,18 @@ resource "helm_release" "image_updater" {
   max_history     = 5
 
   values = [
-    file("${path.module}/values/image-updater.yaml")
+    file("${path.module}/values/image-updater.yaml"),
+    yamlencode({
+      podAnnotations = {
+        "avos.dev/rbac-renderer-sha256" = filesha256("${path.module}/scripts/image-updater-postrender.py")
+      }
+    })
   ]
+
+  postrender {
+    binary_path = "python"
+    args        = [abspath("${path.module}/scripts/image-updater-postrender.py")]
+  }
 
   depends_on = [
     helm_release.argocd,
