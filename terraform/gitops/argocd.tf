@@ -12,6 +12,7 @@ resource "helm_release" "argocd" {
   max_history     = 5
 
   values = [
-    file("${path.module}/values/argocd.yaml")
+    file("${path.module}/values/argocd.yaml"),
+    file("${path.module}/values/argocd-boundaries.json")
   ]
 }
