@@ -1,0 +1,41 @@
+// Copyright 2018 Google LLC
+// Modifications copyright 2026 African Vibe Online Shop (AVOS)
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package hipstershop;
+
+// Kept for compatibility with the shared AVOS service contracts and existing clients.
+option csharp_namespace = "Hipstershop";
+
+import "google/protobuf/empty.proto";
+
+service CartService {
+  rpc AddItem(AddItemRequest) returns (google.protobuf.Empty);
+  rpc GetCart(GetCartRequest) returns (Cart);
+  rpc EmptyCart(EmptyCartRequest) returns (google.protobuf.Empty);
+}
+
+message CartItem {
+  string product_id = 1;
+  int32 quantity = 2;
+}
+
+message AddItemRequest {
+  string user_id = 1;
+  CartItem item = 2;
+}
+
+message EmptyCartRequest {
+  string user_id = 1;
+}
+
+message GetCartRequest {
+  string user_id = 1;
+}
+
+message Cart {
+  string user_id = 1;
+  repeated CartItem items = 2;
+}
