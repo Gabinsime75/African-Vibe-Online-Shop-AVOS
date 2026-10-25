@@ -68,6 +68,12 @@ jobs:
               if Path(name).read_text(encoding="utf-8") != shared:
                   raise SystemExit(f"Shared protobuf copy is out of date: {name}")
               print(f"PASS: {name}")
+
+          cart = Path("protos/cartservice/Cart.proto").read_bytes()
+          copy = Path("src/cartservice/src/protos/Cart.proto")
+          if copy.read_bytes() != cart:
+              raise SystemExit("Cart protobuf copy is out of date")
+          print(f"PASS: {copy}")
           PY
 
       - name: Compile schemas and check compatibility
