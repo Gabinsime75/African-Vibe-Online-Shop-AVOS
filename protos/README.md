@@ -41,3 +41,5 @@ compilation and FILE compatibility checks.
 Update authoritative contracts and affected build copies together.
 Regenerate clients, build consumers, and pass compilation,
 FILE compatibility, copy-consistency, and generated-client checks.
+
+[RPC request policy](../Docs/Policies/GRPC-RPC-POLICY.md)
