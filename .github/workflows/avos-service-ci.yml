@@ -297,7 +297,7 @@ jobs:
 
       - name: Upload sanitized security reports
         if: always() && steps.security.outcome != 'skipped'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: avos-security-${{ inputs.service-name }}
           path: ${{ runner.temp }}/avos-security/${{ inputs.service-name }}/*.json
@@ -323,7 +323,7 @@ jobs:
 
       - name: Upload supply-chain evidence
         if: always() && steps.image.outcome == 'success'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: avos-supply-chain-${{ inputs.service-name }}-${{ steps.contract.outputs.source-sha }}
           path: ${{ runner.temp }}/avos-supply-chain/${{ inputs.service-name }}/
@@ -406,7 +406,7 @@ jobs:
           always() &&
           (steps.signing.outcome == 'success' ||
            steps.signing.outcome == 'failure')
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: avos-signing-${{ inputs.service-name }}-${{ steps.contract.outputs.source-sha }}
           path: ${{ runner.temp }}/avos-signing/${{ inputs.service-name }}/
@@ -415,7 +415,7 @@ jobs:
 
       - name: Upload publication evidence
         if: always() && steps.publication.outcome == 'success'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: avos-publication-${{ inputs.service-name }}-${{ steps.contract.outputs.source-sha }}
           path: ${{ runner.temp }}/avos-publication/${{ inputs.service-name }}/publication.json
