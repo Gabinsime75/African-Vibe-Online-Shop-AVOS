@@ -127,6 +127,8 @@ class EmailService(demo_pb2_grpc.EmailServiceServicer):
 
 
 def configure_telemetry():
+    # Propagation is required even when collector export is disabled.
+    GrpcInstrumentorServer().instrument()
     if not environment_flag("ENABLE_OTEL", True):
         logger.info("OpenTelemetry disabled")
         return None
@@ -141,7 +143,6 @@ def configure_telemetry():
     provider = TracerProvider(resource=resource)
     provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
     trace.set_tracer_provider(provider)
-    GrpcInstrumentorServer().instrument()
     logger.info("OpenTelemetry enabled")
     return provider
 

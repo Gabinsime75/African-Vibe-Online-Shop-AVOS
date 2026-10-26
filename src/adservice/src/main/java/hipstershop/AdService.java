@@ -26,6 +26,9 @@ import io.grpc.Status;
 import io.grpc.health.v1.HealthCheckResponse.ServingStatus;
 import io.grpc.services.HealthStatusManager;
 import io.grpc.stub.StreamObserver;
+import io.opentelemetry.instrumentation.grpc.v1_6.GrpcTelemetry;
+import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,6 +36,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -45,15 +49,18 @@ public final class AdService {
 
   private Server server;
   private HealthStatusManager healthMgr;
+  private OpenTelemetrySdk telemetry;
 
   private static final AdService SERVICE = new AdService();
 
   private void start() throws IOException {
     int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "9555"));
     healthMgr = new HealthStatusManager();
+    telemetry = initTracing();
 
     server =
         ServerBuilder.forPort(port)
+            .intercept(GrpcTelemetry.create(telemetry).createServerInterceptor())
             .addService(new AdServiceImpl())
             .addService(healthMgr.getHealthService())
             .build()
@@ -83,6 +90,8 @@ public final class AdService {
       } catch (InterruptedException interrupted) {
         server.shutdownNow();
         Thread.currentThread().interrupt();
+      } finally {
+        telemetry.close();
       }
     }
   }
@@ -154,7 +163,7 @@ public final class AdService {
     Ad wearableWallet =
         Ad.newBuilder()
             .setRedirectUrl("/product/2ZYFJ3GM2N")
-            .setText("Carry culture with confidence—discover the AVOS wearable leather wallet.")
+            .setText("Carry culture with confidenceâ€”discover the AVOS wearable leather wallet.")
             .build();
     Ad eldecksShoes =
         Ad.newBuilder()
@@ -201,23 +210,28 @@ public final class AdService {
     LOGGER.info("Metrics will be collected by the AVOS OpenTelemetry platform integration");
   }
 
-  private static void initTracing() {
-    if (System.getenv("DISABLE_TRACING") != null) {
-      LOGGER.info("Tracing disabled by DISABLE_TRACING");
-      return;
-    }
-    LOGGER.info("Tracing will be exported through the AVOS OpenTelemetry Collector");
+  private static OpenTelemetrySdk initTracing() {
+    boolean exportEnabled = System.getenv("DISABLE_TRACING") == null;
+    LOGGER.info("W3C trace propagation enabled; export enabled: {}", exportEnabled);
+    return AutoConfiguredOpenTelemetrySdk.builder()
+        .disableShutdownHook()
+        .addPropertiesSupplier(
+            () ->
+                Map.of(
+                    "otel.service.name", "adservice",
+                    "otel.propagators", "tracecontext,baggage",
+                    "otel.metrics.exporter", "none",
+                    "otel.logs.exporter", "none",
+                    "otel.exporter.otlp.protocol", "grpc",
+                    "otel.traces.exporter", exportEnabled ? "otlp" : "none"))
+        .build()
+        .getOpenTelemetrySdk();
   }
 
   /** Main launches the server from the command line. */
   public static void main(String[] args) throws IOException, InterruptedException {
 
-    new Thread(
-            () -> {
-              initStats();
-              initTracing();
-            })
-        .start();
+    initStats();
 
     // Start the RPC server. You shouldn't see any output from gRPC before this.
     LOGGER.info("Starting AVOS Ad Service");

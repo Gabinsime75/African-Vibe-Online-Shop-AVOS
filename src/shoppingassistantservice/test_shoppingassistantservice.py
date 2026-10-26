@@ -22,6 +22,9 @@ class FakeContext:
         self.code = None
         self.details = None
 
+    def invocation_metadata(self):
+        return ()
+
     def abort(self, code, details):
         self.code = code
         self.details = details

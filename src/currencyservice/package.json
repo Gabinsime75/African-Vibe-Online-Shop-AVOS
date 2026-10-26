@@ -16,7 +16,7 @@
     "start": "node server.js",
     "client": "node client.js",
     "check": "node --check server.js && node --check currency.js && node --check telemetry.js && node --check client.js",
-    "test": "node --test test/currency.test.js"
+    "test": "node --test test/currency.test.js test/telemetry.test.js"
   },
   "dependencies": {
     "@grpc/grpc-js": "1.14.4",
