@@ -6,7 +6,7 @@ resources:
 images:
 - name: productcatalogservice
   newName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/productcatalogservice
-  newTag: fb60a25b895b838e82532b1e484ef93a73e73fad
+  newTag: 05837921152908dac6ac7879f706845fc5eb84dc
 replicas:
 - name: productcatalogservice
   count: 1
