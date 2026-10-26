@@ -11,7 +11,7 @@
   "scripts": {
     "start": "node index.js",
     "check": "node --check index.js && node --check server.js && node --check charge.js && node --check telemetry.js && node --check logger.js",
-    "test": "node --test test/payment.test.js"
+    "test": "node --test test/payment.test.js test/telemetry.test.js"
   },
   "license": "Apache-2.0",
   "dependencies": {

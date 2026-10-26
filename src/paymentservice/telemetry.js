@@ -10,10 +10,7 @@ function environmentFlag (name, fallback) {
 }
 
 function startTelemetry (logger) {
-  if (!environmentFlag('ENABLE_OTEL', true)) {
-    logger.info('OpenTelemetry disabled');
-    return { shutdown: async () => {} };
-  }
+  const exportEnabled = environmentFlag('ENABLE_OTEL', true);
 
   const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-grpc');
   const { GrpcInstrumentation } = require('@opentelemetry/instrumentation-grpc');
@@ -31,12 +28,15 @@ function startTelemetry (logger) {
       [ATTR_SERVICE_NAMESPACE]: 'avos',
       [ATTR_SERVICE_VERSION]: '1.0.0'
     }),
-    traceExporter: new OTLPTraceExporter(),
+    // Keep gRPC extraction/injection active even before a collector is deployed.
+    ...(exportEnabled
+      ? { traceExporter: new OTLPTraceExporter() }
+      : { spanProcessors: [] }),
     instrumentations: [new GrpcInstrumentation()]
   });
 
   sdk.start();
-  logger.info('OpenTelemetry enabled');
+  logger.info(exportEnabled ? 'OpenTelemetry export enabled' : 'Trace propagation enabled; export disabled');
   return { shutdown: () => sdk.shutdown() };
 }
 

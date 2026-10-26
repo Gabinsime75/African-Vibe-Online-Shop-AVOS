@@ -31,8 +31,10 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -221,7 +223,10 @@ func initTracing(log logrus.FieldLogger, ctx context.Context, svc *frontendServe
 	}
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithBatcher(exporter),
-		sdktrace.WithSampler(sdktrace.AlwaysSample()))
+		sdktrace.WithResource(resource.NewSchemaless(
+			attribute.String("service.name", "frontend"),
+			attribute.String("service.namespace", "avos"))),
+		sdktrace.WithSampler(sdktrace.ParentBased(sdktrace.AlwaysSample())))
 	otel.SetTracerProvider(tp)
 
 	return tp, err

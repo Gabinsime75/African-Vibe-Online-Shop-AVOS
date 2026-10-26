@@ -55,17 +55,18 @@ def _positive_number(name, default, number_type):
 
 def configure_tracing():
     """Configure OTLP tracing when ENABLE_TRACING=1."""
+    # Propagation is required even when collector export is disabled.
+    GrpcInstrumentorClient().instrument()
+    GrpcInstrumentorServer().instrument()
     if os.getenv("ENABLE_TRACING", "0") != "1":
         LOGGER.info("Tracing disabled")
         return None
 
     provider = TracerProvider(
-        resource=Resource.create({"service.name": SERVICE_NAME})
+        resource=Resource.create({"service.name": "recommendationservice", "service.namespace": "avos"})
     )
     provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
     trace.set_tracer_provider(provider)
-    GrpcInstrumentorClient().instrument()
-    GrpcInstrumentorServer().instrument()
     LOGGER.info("OTLP tracing enabled")
     return provider
 

@@ -77,6 +77,7 @@ type checkoutService struct {
 }
 
 func main() {
+	configureTracePropagation()
 	cfg, err := loadConfig()
 	if err != nil {
 		log.WithError(err).Fatal("invalid service configuration")
@@ -251,10 +252,6 @@ func initTelemetry(ctx context.Context) (func(context.Context) error, error) {
 		sdktrace.WithSampler(sdktrace.ParentBased(sdktrace.TraceIDRatioBased(0.25))),
 	)
 	otel.SetTracerProvider(provider)
-	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
-		propagation.TraceContext{},
-		propagation.Baggage{},
-	))
 
 	return provider.Shutdown, nil
 }
@@ -628,4 +625,12 @@ func publicPaymentError(err error) error {
 		return status.Error(codes.DeadlineExceeded, "payment processing timed out")
 	}
 	return status.Error(codes.Unavailable, "payment processing is temporarily unavailable")
+}
+
+// Context forwarding is required even while collector export is disabled.
+func configureTracePropagation() {
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
+		propagation.TraceContext{},
+		propagation.Baggage{},
+	))
 }

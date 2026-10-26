@@ -32,6 +32,7 @@ ext {
 
 dependencies {
     implementation platform("io.netty:netty-bom:4.1.137.Final")
+    implementation platform("io.opentelemetry:opentelemetry-bom:1.67.0")
     if (speed) {
         implementation fileTree(dir: offlineCompile, include: '*.jar')
     } else {
@@ -42,6 +43,9 @@ dependencies {
                 "io.grpc:grpc-netty:${grpcVersion}",
                 "io.grpc:grpc-services:${grpcVersion}",
                 "io.grpc:grpc-census:${grpcVersion}",
+                "io.opentelemetry:opentelemetry-sdk-extension-autoconfigure",
+                "io.opentelemetry:opentelemetry-exporter-otlp",
+                "io.opentelemetry.instrumentation:opentelemetry-grpc-1.6:2.33.0-alpha",
                 "org.apache.logging.log4j:log4j-core:2.25.3",
                 "com.google.protobuf:protobuf-java:${protocVersion}"
 
@@ -101,6 +105,7 @@ task downloadRepos(type: Copy) {
 dependencies {
     testImplementation platform('org.junit:junit-bom:5.11.4')
     testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'io.opentelemetry:opentelemetry-sdk-testing'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 

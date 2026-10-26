@@ -17,7 +17,8 @@ import grpc
 from botocore.config import Config as BotoConfig
 from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 from opensearchpy import AWSV4SignerAuth, OpenSearch, RequestsHttpConnection
-from opentelemetry import trace
+from opentelemetry import context as otel_context
+from opentelemetry import propagate, trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
@@ -289,6 +290,19 @@ class ShoppingAssistantServicer(
         self.max_image_bytes = max_image_bytes
 
     def GetRecommendations(self, request, context):  # noqa: N802
+        # Start from an empty context so unrelated worker activity cannot become a parent.
+        carrier = dict(context.invocation_metadata())
+        parent = propagate.extract(carrier, context=otel_context.Context())
+        token = otel_context.attach(parent)
+        try:
+            with trace.get_tracer(__name__).start_as_current_span(
+                f"{SERVICE_NAME}/GetRecommendations", kind=trace.SpanKind.SERVER
+            ):
+                return self._get_recommendations(request, context)
+        finally:
+            otel_context.detach(token)
+
+    def _get_recommendations(self, request, context):
         prompt = request.prompt.strip()
         image = bytes(request.image)
         media_type = request.image_media_type.lower().strip()
