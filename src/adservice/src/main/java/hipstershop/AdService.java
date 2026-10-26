@@ -60,7 +60,7 @@ public final class AdService {
 
     server =
         ServerBuilder.forPort(port)
-            .intercept(GrpcTelemetry.create(telemetry).newServerInterceptor())
+            .intercept(GrpcTelemetry.create(telemetry).createServerInterceptor())
             .addService(new AdServiceImpl())
             .addService(healthMgr.getHealthService())
             .build()
@@ -163,7 +163,7 @@ public final class AdService {
     Ad wearableWallet =
         Ad.newBuilder()
             .setRedirectUrl("/product/2ZYFJ3GM2N")
-            .setText("Carry culture with confidence—discover the AVOS wearable leather wallet.")
+            .setText("Carry culture with confidenceâ€”discover the AVOS wearable leather wallet.")
             .build();
     Ad eldecksShoes =
         Ad.newBuilder()

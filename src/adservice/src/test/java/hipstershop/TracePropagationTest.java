@@ -43,7 +43,7 @@ class TracePropagationTest {
               .build();
       Server server =
           ServerBuilder.forPort(0)
-              .intercept(GrpcTelemetry.create(telemetry).newServerInterceptor())
+              .intercept(GrpcTelemetry.create(telemetry).createServerInterceptor())
               .addService(new AdService.AdServiceImpl())
               .build()
               .start();
