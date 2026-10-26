@@ -125,5 +125,25 @@ class AssistantEngineTest(unittest.TestCase):
         search.search.assert_called_once()
 
 
+
+
+class ShutdownLifecycleTest(unittest.TestCase):
+    def test_health_is_withdrawn_before_draining_and_waiting(self):
+        from shoppingassistantservice import shutdown_server
+
+        calls = []
+        health_service = Mock()
+        server = Mock()
+        health_service.enter_graceful_shutdown.side_effect = lambda: calls.append("not-serving")
+        server.stop.side_effect = lambda **kwargs: (
+            calls.append(("stop", kwargs["grace"])) or server.stopped
+        )
+        server.stopped.wait.side_effect = lambda: calls.append("wait")
+
+        shutdown_server(server, health_service)
+
+        self.assertEqual(calls, ["not-serving", ("stop", 10), "wait"])
+
+
 if __name__ == "__main__":
     unittest.main()

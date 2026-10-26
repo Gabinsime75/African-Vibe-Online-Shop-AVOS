@@ -326,7 +326,11 @@ class ShoppingAssistantServicer(
         )
 
 
-def create_server(settings: Settings, engine: AssistantEngine | None = None) -> grpc.Server:
+def create_server(
+    settings: Settings,
+    engine: AssistantEngine | None = None,
+    health_service: health.HealthServicer | None = None,
+) -> grpc.Server:
     server = grpc.server(
         futures.ThreadPoolExecutor(max_workers=int(os.getenv("GRPC_WORKERS", "10"))),
         options=[
@@ -341,7 +345,7 @@ def create_server(settings: Settings, engine: AssistantEngine | None = None) -> 
         assistant, server
     )
 
-    health_service = health.HealthServicer()
+    health_service = health_service if health_service is not None else health.HealthServicer()
     health_pb2_grpc.add_HealthServicer_to_server(health_service, server)
     health_service.set("", health_pb2.HealthCheckResponse.SERVING)
     health_service.set(SERVICE_NAME, health_pb2.HealthCheckResponse.SERVING)
@@ -350,16 +354,23 @@ def create_server(settings: Settings, engine: AssistantEngine | None = None) -> 
     return server
 
 
+def shutdown_server(server: grpc.Server, health_service: health.HealthServicer) -> None:
+    """Publish NOT_SERVING before a bounded drain and wait for completion."""
+    health_service.enter_graceful_shutdown()
+    server.stop(grace=10).wait()
+
+
 def serve() -> None:
     configure_tracing()
     settings = Settings.from_env()
-    server = create_server(settings)
+    health_service = health.HealthServicer()
+    server = create_server(settings, health_service=health_service)
     server.start()
     LOGGER.info("AVOS Shopping Assistant gRPC server listening on port %d", settings.port)
 
     def stop_server(signum, _frame):
         LOGGER.info("received signal %d; stopping server", signum)
-        server.stop(grace=10)
+        shutdown_server(server, health_service)
 
     signal.signal(signal.SIGTERM, stop_server)
     signal.signal(signal.SIGINT, stop_server)

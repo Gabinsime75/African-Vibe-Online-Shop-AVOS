@@ -16,6 +16,8 @@
 
 import os
 import random
+import signal
+import threading
 from concurrent import futures
 
 import grpc
@@ -152,6 +154,15 @@ def serve():
     if bound_port == 0:
         raise RuntimeError(f"Unable to bind gRPC server to port {port}")
 
+    stop_event = threading.Event()
+
+    def request_shutdown(signum, _frame):
+        LOGGER.info("Shutdown requested", extra={"signal": signum})
+        stop_event.set()
+
+    signal.signal(signal.SIGTERM, request_shutdown)
+    signal.signal(signal.SIGINT, request_shutdown)
+
     server.start()
     LOGGER.info(
         "AVOS Recommendation Service started",
@@ -163,7 +174,7 @@ def serve():
     )
 
     try:
-        server.wait_for_termination()
+        stop_event.wait()
     except KeyboardInterrupt:
         LOGGER.info("Stopping AVOS Recommendation Service")
     finally:

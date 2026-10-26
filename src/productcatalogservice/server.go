@@ -20,7 +20,9 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	pb "github.com/Gabinsime75/African-Vibe-Online-Shop-AVOS/src/productcatalogservice/genproto"
@@ -88,11 +90,21 @@ func main() {
 		port = os.Getenv("PORT")
 	}
 	log.Infof("starting grpc server at :%s", port)
-	run(port)
-	select {}
+	shutdown, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+	_, server, healthcheck := run(port)
+	<-shutdown.Done()
+	stopCatalogServer(server, healthcheck, 10*time.Second)
+	if provider, ok := otel.GetTracerProvider().(interface{ Shutdown(context.Context) error }); ok {
+		flushCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		if err := provider.Shutdown(flushCtx); err != nil {
+			log.WithError(err).Warn("tracing shutdown failed")
+		}
+	}
 }
 
-func run(port string) string {
+func run(port string) (string, *grpc.Server, *health.Server) {
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
 	if err != nil {
 		log.Fatal(err)
@@ -114,10 +126,16 @@ func run(port string) string {
 
 	pb.RegisterProductCatalogServiceServer(srv, svc)
 	healthcheck := health.NewServer()
+	healthcheck.SetServingStatus("", healthpb.HealthCheckResponse_SERVING)
+	healthcheck.SetServingStatus("hipstershop.ProductCatalogService", healthpb.HealthCheckResponse_SERVING)
 	healthpb.RegisterHealthServer(srv, healthcheck)
-	go srv.Serve(listener)
+	go func() {
+		if err := srv.Serve(listener); err != nil && err != grpc.ErrServerStopped {
+			log.WithError(err).Fatal("catalog gRPC server failed")
+		}
+	}()
 
-	return listener.Addr().String()
+	return listener.Addr().String(), srv, healthcheck
 }
 
 func initStats() {
