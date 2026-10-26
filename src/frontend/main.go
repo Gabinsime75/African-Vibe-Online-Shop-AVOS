@@ -18,8 +18,11 @@ package main
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -90,6 +93,12 @@ type frontendServer struct {
 }
 
 func main() {
+	if err := runFrontend(); err != nil {
+		logrus.WithError(err).Fatal("frontend server failed")
+	}
+}
+
+func runFrontend() error {
 	ctx := context.Background()
 	log := logrus.New()
 	log.Level = logrus.DebugLevel
@@ -111,9 +120,14 @@ func main() {
 
 	baseUrl = os.Getenv("BASE_URL")
 
+	var tracerProvider *sdktrace.TracerProvider
 	if os.Getenv("ENABLE_TRACING") == "1" {
 		log.Info("Tracing enabled.")
-		initTracing(log, ctx, svc)
+		var err error
+		tracerProvider, err = initTracing(log, ctx, svc)
+		if err != nil {
+			log.WithError(err).Warn("tracing initialization failed")
+		}
 	} else {
 		log.Info("Tracing disabled.")
 	}
@@ -141,6 +155,26 @@ func main() {
 	mustConnGRPC(ctx, &svc.adSvcConn, svc.adSvcAddr)
 	mustConnGRPC(ctx, &svc.shoppingAssistantSvcConn, svc.shoppingAssistantSvcAddr)
 
+	defer func() {
+		if tracerProvider != nil {
+			flushCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+			if err := tracerProvider.Shutdown(flushCtx); err != nil {
+				log.WithError(err).Warn("tracing shutdown failed")
+			}
+		}
+		for _, conn := range []*grpc.ClientConn{
+			svc.productCatalogSvcConn, svc.currencySvcConn, svc.cartSvcConn,
+			svc.recommendationSvcConn, svc.checkoutSvcConn, svc.shippingSvcConn,
+			svc.adSvcConn, svc.shoppingAssistantSvcConn, svc.collectorConn,
+		} {
+			if conn != nil {
+				_ = conn.Close()
+			}
+		}
+	}()
+
+	lifecycle := &frontendLifecycle{}
 	r := mux.NewRouter()
 	r.HandleFunc(baseUrl+"/", svc.homeHandler).Methods(http.MethodGet, http.MethodHead)
 	r.HandleFunc(baseUrl+"/product/{id}", svc.productHandler).Methods(http.MethodGet, http.MethodHead)
@@ -153,7 +187,7 @@ func main() {
 	r.HandleFunc(baseUrl+"/assistant", svc.assistantHandler).Methods(http.MethodGet)
 	r.PathPrefix(baseUrl + "/static/").Handler(http.StripPrefix(baseUrl+"/static/", http.FileServer(http.Dir("./static/"))))
 	r.HandleFunc(baseUrl+"/robots.txt", func(w http.ResponseWriter, _ *http.Request) { fmt.Fprint(w, "User-agent: *\nDisallow: /") })
-	r.HandleFunc(baseUrl+"/_healthz", func(w http.ResponseWriter, _ *http.Request) { fmt.Fprint(w, "ok") })
+	r.HandleFunc(baseUrl+"/_healthz", lifecycle.health)
 	r.HandleFunc(baseUrl+"/product-meta/{ids}", svc.getProductByID).Methods(http.MethodGet)
 	r.HandleFunc(baseUrl+"/bot", svc.chatBotHandler).Methods(http.MethodPost)
 
@@ -162,8 +196,15 @@ func main() {
 	handler = ensureSessionID(handler)                 // add session ID
 	handler = otelhttp.NewHandler(handler, "frontend") // add OTel tracing
 
-	log.Infof("starting server on %s:%s", addr, srvPort)
-	log.Fatal(http.ListenAndServe(addr+":"+srvPort, handler))
+	listener, err := net.Listen("tcp", net.JoinHostPort(addr, srvPort))
+	if err != nil {
+		return errors.Wrap(err, "HTTP listen failed")
+	}
+	shutdown, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+	server := &http.Server{Handler: handler, ReadHeaderTimeout: 5 * time.Second}
+	log.Infof("starting server on %s", listener.Addr())
+	return serveFrontend(shutdown, server, listener, lifecycle, 25*time.Second)
 }
 func initStats(log logrus.FieldLogger) {
 	// TODO(arbrown) Implement OpenTelemtry stats

@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -72,8 +73,17 @@ public final class AdService {
 
   private void stop() {
     if (server != null) {
-      healthMgr.clearStatus("");
+      healthMgr.enterTerminalState();
       server.shutdown();
+      try {
+        if (!server.awaitTermination(10, TimeUnit.SECONDS)) {
+          server.shutdownNow();
+          server.awaitTermination(2, TimeUnit.SECONDS);
+        }
+      } catch (InterruptedException interrupted) {
+        server.shutdownNow();
+        Thread.currentThread().interrupt();
+      }
     }
   }
 

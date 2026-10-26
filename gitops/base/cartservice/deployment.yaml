@@ -68,18 +68,21 @@ spec:
           startupProbe:
             grpc:
               port: 7070
+              service: liveness
             periodSeconds: 5
             timeoutSeconds: 3
             failureThreshold: 30
           readinessProbe:
             grpc:
               port: 7070
+              service: readiness
             periodSeconds: 10
             timeoutSeconds: 3
             failureThreshold: 3
           livenessProbe:
             grpc:
               port: 7070
+              service: liveness
             periodSeconds: 20
             timeoutSeconds: 3
             failureThreshold: 3
