@@ -17,11 +17,6 @@
 {{ define "assistant" }}
 
 {{ template "header" . }}
-<div {{ with $.platform_css }} class="{{.}}" {{ end }}>
-  <span class="platform-flag">
-    {{$.platform_name}}
-  </span>
-</div>
 
 <main role="main">
   <div class="container">
@@ -65,7 +60,7 @@
     var baseString;
     reader.onloadend = function () {
       baseString = reader.result;
-      console.log(baseString);
+
       image = baseString;
     };
     reader.readAsDataURL(file);
@@ -103,9 +98,9 @@
     }
 
     // Construct and render user message
-    console.log("bot button clicked");
+
     const message = botinput.value;
-    console.log("message: " + message);
+
     const usermessage = document.createElement("p");
     const userMessageSpan = document.createElement("span");
     const imageDivElement = document.createElement("div");
@@ -127,7 +122,7 @@
     // Disable send button and input field
     botbutton.disabled = true;
     botinput.disabled = true;
-    console.log("bot is typing");
+
 
     // Construct and render placeholder bot message
     const botMessage = document.createElement("p");
@@ -152,11 +147,11 @@
       }),
     });
     const responseJson = await response.json();
-    console.log(responseJson);
+
 
     // Fetch the product IDs from the response
     const extractedIds = responseJson.product_ids || extractIdsFromString(responseJson.message);
-    console.log(extractedIds);
+
 
     // Replace the placeholder bot message text with the real response
     // Making sure to remove any lists or product IDs from that message
@@ -187,7 +182,8 @@
 
         // Construct product image
         const botProductImg = document.createElement("img");
-        botProductImg.src = product["picture"];
+        botProductImg.src = "{{ $.baseUrl }}" + product["picture"];
+        botProductImg.alt = product["name"];
         botProductImg.classList.add("bot-product-img");
         botProductImg.onerror = function() { this.style.display = 'none'; };
         botProductDiv.appendChild(botProductImg);
@@ -199,7 +195,11 @@
         if (productDescription.length > 350) { // Shorten descriptions that are too long
           productDescription = productDescription.substring(0, 330) + '...';
         }
-        botProductDescription.innerHTML = "<b>" + product["name"] + "</b><br>" + productDescription;
+        const productName = document.createElement("strong");
+        productName.textContent = product["name"];
+        botProductDescription.appendChild(productName);
+        botProductDescription.appendChild(document.createElement("br"));
+        botProductDescription.appendChild(document.createTextNode(productDescription));
         botProductDiv.appendChild(botProductDescription);
 
         // Append main product div into the root products div
@@ -219,5 +219,7 @@
 
   main();
 </script>
+
+{{ template "footer" . }}
 
 {{ end }}

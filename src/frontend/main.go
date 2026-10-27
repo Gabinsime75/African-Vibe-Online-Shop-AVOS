@@ -58,6 +58,7 @@ var (
 		"JPY": true,
 		"GBP": true,
 		"TRY": true,
+		"ZAR": true,
 	}
 
 	baseUrl = ""
@@ -120,7 +121,11 @@ func runFrontend() error {
 		propagation.NewCompositeTextMapPropagator(
 			propagation.TraceContext{}, propagation.Baggage{}))
 
-	baseUrl = os.Getenv("BASE_URL")
+	var baseErr error
+	baseUrl, baseErr = normalizeBaseURL(os.Getenv("BASE_URL"))
+	if baseErr != nil {
+		return baseErr
+	}
 
 	var tracerProvider *sdktrace.TracerProvider
 	if os.Getenv("ENABLE_TRACING") == "1" {
