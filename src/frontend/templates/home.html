@@ -17,11 +17,6 @@
 {{ define "home" }}
 
 {{ template "header" . }}
-<div {{ with $.platform_css }} class="{{.}}" {{ end }}>
-  <span class="platform-flag">
-    {{$.platform_name}}
-  </span>
-</div>
 <main role="main" class="home">
 
   <!-- The image at the top of the home page, displayed on smaller screens. -->
@@ -39,8 +34,10 @@
 
         <div class="row hot-products-row px-xl-6">
 
-          <div class="col-12">
-            <h3>Explore the AVOS Collection</h3>
+          <div class="col-12 avos-storefront-intro">
+            <h1>African Vibe Online Shop</h1>
+            <p>Explore expressive clothing, footwear, and accessories inspired by African style.</p>
+            <h2>Explore the AVOS Collection</h2>
           </div>
 
           {{ range $.products }}
@@ -58,12 +55,6 @@
 
         </div>
 
-        <!-- Footer for larger screens. -->
-        <div class="row d-none d-lg-block home-desktop-footer-row">
-          <div class="col-12 p-0">
-            {{ template "footer" . }}
-          </div>
-        </div>
 
       </div>
 
@@ -72,9 +63,6 @@
 
 </main>
 
-<!-- Footer for smaller screens. -->
-<div class="d-lg-none">
-  {{ template "footer" . }}
-</div>
+{{ template "footer" . }}
 
 {{ end }}

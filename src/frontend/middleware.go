@@ -17,7 +17,6 @@ package main
 import (
 	"context"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/google/uuid"
@@ -66,9 +65,6 @@ func (lh *logHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		"http.req.method": r.Method,
 		"http.req.id":     requestID.String(),
 	})
-	if v, ok := r.Context().Value(ctxKeySessionID{}).(string); ok {
-		log = log.WithField("session", v)
-	}
 	log.Debug("request started")
 	defer func() {
 		log.WithFields(logrus.Fields{
@@ -85,25 +81,22 @@ func (lh *logHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func ensureSessionID(next http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var sessionID string
-		c, err := r.Cookie(cookieSessionID)
-		if err == http.ErrNoCookie {
-			if os.Getenv("ENABLE_SINGLE_SHARED_SESSION") == "true" {
-				// Hard coded user id, shared across sessions
-				sessionID = "12345678-1234-1234-1234-123456789123"
-			} else {
-				u, _ := uuid.NewRandom()
-				sessionID = u.String()
+		if c, err := r.Cookie(cookieSessionID); err == nil {
+			parsed, parseErr := uuid.Parse(c.Value)
+			if parseErr == nil && parsed.Version() == 4 && parsed.Variant() == uuid.RFC4122 && parsed.String() == c.Value {
+				sessionID = c.Value
 			}
-			http.SetCookie(w, &http.Cookie{
-				Name:   cookieSessionID,
-				Value:  sessionID,
-				MaxAge: cookieMaxAge,
-			})
-		} else if err != nil {
-			return
-		} else {
-			sessionID = c.Value
 		}
+		if sessionID == "" {
+			u, err := uuid.NewRandom()
+			if err != nil {
+				http.Error(w, "AVOS could not start a shopping session. Please try again.", http.StatusInternalServerError)
+				return
+			}
+			sessionID = u.String()
+		}
+		// Refresh attributes for existing AVOS sessions as well as new visitors.
+		http.SetCookie(w, storefrontCookie(r, cookieSessionID, sessionID, cookieMaxAge))
 		ctx := context.WithValue(r.Context(), ctxKeySessionID{}, sessionID)
 		r = r.WithContext(ctx)
 		next.ServeHTTP(w, r)

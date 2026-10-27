@@ -17,11 +17,6 @@
 {{ define "cart" }}
     {{ template "header" . }}
 
-    <div {{ with $.platform_css }} class="{{.}}" {{ end }}>
-        <span class="platform-flag">
-            {{$.platform_name}}
-        </span>
-    </div>
 
     <main role="main" class="cart-sections">
 
@@ -57,7 +52,7 @@
                     <div class="row cart-summary-item-row">
                         <div class="col-md-4 pl-md-0">
                             <a href="{{ $.baseUrl }}/product/{{.Item.Id}}">
-                                <img class="img-fluid" alt="" src="{{ $.baseUrl }}{{.Item.Picture}}" />
+                                <img class="img-fluid" alt="{{.Item.Name}}" src="{{ $.baseUrl }}{{.Item.Picture}}" />
                             </a>
                         </div>
                         <div class="col-md-8 pr-md-0">
@@ -99,11 +94,12 @@
 
                 <div class="col-lg-5 offset-lg-1 col-xl-4">
 
+                    <p>Use sample details only. Payments are simulated; do not enter real card information.</p>
                     <form class="cart-checkout-form" action="{{ $.baseUrl }}/cart/checkout" method="POST">
 
                         <div class="row">
                             <div class="col">
-                                <h3>Shipping Address</h3>
+                                <h3>Sample Shipping Address</h3>
                             </div>
                         </div>
 
@@ -111,7 +107,7 @@
                             <div class="col avos-form-field">
                                 <label for="email">E-mail Address</label>
                                 <input type="email" id="email"
-                                    name="email" value="someone@example.com" required>
+                                    name="email" value="customer@example.com" required>
                             </div>
                         </div>
 
@@ -119,7 +115,7 @@
                             <div class="col avos-form-field">
                                 <label for="street_address">Street Address</label>
                                 <input type="text" name="street_address"
-                                    id="street_address" value="1600 Amphitheatre Parkway" required>
+                                    id="street_address" value="100 AVOS Way" required>
                             </div>
                         </div>
 
@@ -127,7 +123,7 @@
                             <div class="col avos-form-field">
                                 <label for="zip_code">Zip Code</label>
                                 <input type="text"
-                                    name="zip_code" id="zip_code" value="94043" required pattern="\d{4,5}">
+                                    name="zip_code" id="zip_code" value="73179" required pattern="\d{4,5}">
                             </div>
                         </div>
 
@@ -135,7 +131,7 @@
                             <div class="col avos-form-field">
                                 <label for="city">City</label>
                                 <input type="text" name="city" id="city"
-                                    value="Mountain View" required>
+                                    value="Oklahoma City" required>
                                 </div>
                             </div>
 
@@ -143,7 +139,7 @@
                             <div class="col-md-5 avos-form-field">
                                 <label for="state">State</label>
                                 <input type="text" name="state" id="state"
-                                    value="CA" required>
+                                    value="OK" required>
                             </div>
                             <div class="col-md-7 avos-form-field">
                                 <label for="country">Country</label>
@@ -165,7 +161,7 @@
                                 <input type="text" id="credit_card_number"
                                     name="credit_card_number"
                                     placeholder="0000000000000000"
-                                    value="4432801561520454"
+                                    value="4111111111111111"
                                     required pattern="\d{16}">
                             </div>
                         </div>
@@ -185,7 +181,7 @@
                                     <option value="9">September</option>
                                     <option value="10">October</option>
                                     <option value="11">November</option>
-                                    <option value="12">January</option>
+                                    <option value="12">December</option>
                                 </select>
                                 <img src="{{ $.baseUrl }}/static/icons/AVOS_DownArrow.svg" alt="" class="avos-dropdown-chevron">
                             </div>
@@ -203,7 +199,7 @@
                             <div class="col-md-3 avos-form-field">
                                 <label for="credit_card_cvv">CVV</label>
                                 <input type="password" id="credit_card_cvv"
-                                    name="credit_card_cvv" value="672" required pattern="\d{3}">
+                                    name="credit_card_cvv" value="123" required pattern="\d{3}">
                             </div>
                         </div>
 

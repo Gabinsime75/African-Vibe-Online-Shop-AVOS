@@ -16,17 +16,12 @@
 
 {{ define "product" }}
 {{ template "header" . }}
-<div {{ with $.platform_css }} class="{{.}}" {{ end }}>
-  <span class="platform-flag">
-    {{$.platform_name}}
-  </span>
-</div>
 
 <main role="main">
   <div class="h-product container">
     <div class="row">
       <div class="col-md-6">
-        <img class="product-image" alt="" src="{{ $.baseUrl }}{{$.product.Item.Picture}}" />
+        <img class="product-image" alt="{{$.product.Item.Name}}" src="{{ $.baseUrl }}{{$.product.Item.Picture}}" />
       </div>
       <div class="product-info col-md-5">
         <div class="product-wrapper">

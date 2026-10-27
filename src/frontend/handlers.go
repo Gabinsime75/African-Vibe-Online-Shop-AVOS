@@ -36,11 +36,6 @@ import (
 	"github.com/Gabinsime75/African-Vibe-Online-Shop-AVOS/src/frontend/validator"
 )
 
-type platformDetails struct {
-	css      string
-	provider string
-}
-
 var (
 	frontendMessage  = strings.TrimSpace(os.Getenv("FRONTEND_MESSAGE"))
 	assistantEnabled = "true" == strings.ToLower(os.Getenv("ENABLE_ASSISTANT"))
@@ -49,10 +44,7 @@ var (
 			"renderMoney":        renderMoney,
 			"renderCurrencyLogo": renderCurrencyLogo,
 		}).ParseGlob("templates/*.html"))
-	plat platformDetails
 )
-
-var validEnvs = []string{"local", "aws"}
 
 func (fe *frontendServer) homeHandler(w http.ResponseWriter, r *http.Request) {
 	log := r.Context().Value(ctxKeyLog{}).(logrus.FieldLogger)
@@ -87,16 +79,6 @@ func (fe *frontendServer) homeHandler(w http.ResponseWriter, r *http.Request) {
 		ps[i] = productView{p, price}
 	}
 
-	// Set ENV_PLATFORM to "aws" in EKS. Local development defaults to "local".
-	var env = os.Getenv("ENV_PLATFORM")
-	if env == "" || !stringinSlice(validEnvs, env) {
-		env = "local"
-	}
-
-	log.Debugf("ENV_PLATFORM is: %s", env)
-	plat = platformDetails{}
-	plat.setPlatformDetails(strings.ToLower(env))
-
 	if err := templates.ExecuteTemplate(w, "home", injectCommonTemplateData(r, map[string]interface{}{
 		"show_currency": true,
 		"currencies":    currencies,
@@ -106,16 +88,6 @@ func (fe *frontendServer) homeHandler(w http.ResponseWriter, r *http.Request) {
 		"ad":            fe.chooseAd(r.Context(), []string{}, log),
 	})); err != nil {
 		log.Error(err)
-	}
-}
-
-func (plat *platformDetails) setPlatformDetails(env string) {
-	if env == "aws" {
-		plat.provider = "AWS"
-		plat.css = "aws-platform"
-	} else {
-		plat.provider = "Local"
-		plat.css = "local"
 	}
 }
 
@@ -385,9 +357,9 @@ func (fe *frontendServer) assistantHandler(w http.ResponseWriter, r *http.Reques
 func (fe *frontendServer) logoutHandler(w http.ResponseWriter, r *http.Request) {
 	log := r.Context().Value(ctxKeyLog{}).(logrus.FieldLogger)
 	log.Debug("logging out")
-	for _, c := range r.Cookies() {
-		c.Expires = time.Now().Add(-time.Hour * 24 * 365)
-		c.MaxAge = -1
+	for _, name := range []string{cookieSessionID, cookieCurrency} {
+		c := storefrontCookie(r, name, "", -1)
+		c.Expires = time.Unix(1, 0)
 		http.SetCookie(w, c)
 	}
 	w.Header().Set("Location", baseUrl+"/")
@@ -496,21 +468,17 @@ func (fe *frontendServer) setCurrencyHandler(w http.ResponseWriter, r *http.Requ
 		renderHTTPError(log, r, w, validator.ValidationErrorResponse(err), http.StatusUnprocessableEntity)
 		return
 	}
+	if !whitelistedCurrencies[payload.Currency] {
+		renderHTTPError(log, r, w, errors.New("currency is not available in the AVOS storefront"), http.StatusUnprocessableEntity)
+		return
+	}
 	log.WithField("curr.new", payload.Currency).WithField("curr.old", currentCurrency(r)).
 		Debug("setting currency")
 
 	if payload.Currency != "" {
-		http.SetCookie(w, &http.Cookie{
-			Name:   cookieCurrency,
-			Value:  payload.Currency,
-			MaxAge: cookieMaxAge,
-		})
+		http.SetCookie(w, storefrontCookie(r, cookieCurrency, payload.Currency, cookieMaxAge))
 	}
-	referer := r.Header.Get("referer")
-	if referer == "" {
-		referer = baseUrl + "/"
-	}
-	w.Header().Set("Location", referer)
+	w.Header().Set("Location", storefrontReturnPath(r))
 	w.WriteHeader(http.StatusFound)
 }
 
@@ -527,12 +495,10 @@ func (fe *frontendServer) chooseAd(ctx context.Context, ctxKeys []string, log lo
 
 func renderHTTPError(log logrus.FieldLogger, r *http.Request, w http.ResponseWriter, err error, code int) {
 	log.WithField("error", err).Error("request error")
-	errMsg := fmt.Sprintf("%+v", err)
 
 	w.WriteHeader(code)
 
 	if templateErr := templates.ExecuteTemplate(w, "error", injectCommonTemplateData(r, map[string]interface{}{
-		"error":       errMsg,
 		"status_code": code,
 		"status":      http.StatusText(code),
 	})); templateErr != nil {
@@ -542,13 +508,9 @@ func renderHTTPError(log logrus.FieldLogger, r *http.Request, w http.ResponseWri
 
 func injectCommonTemplateData(r *http.Request, payload map[string]interface{}) map[string]interface{} {
 	data := map[string]interface{}{
-		"session_id":        sessionID(r),
 		"request_id":        r.Context().Value(ctxKeyRequestID{}),
 		"user_currency":     currentCurrency(r),
-		"platform_css":      plat.css,
-		"platform_name":     plat.provider,
 		"assistant_enabled": assistantEnabled,
-		"deploymentDetails": deploymentDetailsMap,
 		"frontendMessage":   frontendMessage,
 		"currentYear":       time.Now().Year(),
 		"baseUrl":           baseUrl,
@@ -563,7 +525,7 @@ func injectCommonTemplateData(r *http.Request, payload map[string]interface{}) m
 
 func currentCurrency(r *http.Request) string {
 	c, _ := r.Cookie(cookieCurrency)
-	if c != nil {
+	if c != nil && whitelistedCurrencies[c.Value] {
 		return c.Value
 	}
 	return defaultCurrency
@@ -607,6 +569,7 @@ func renderCurrencyLogo(currencyCode string) string {
 		"EUR": "€",
 		"TRY": "₺",
 		"GBP": "£",
+		"ZAR": "R",
 	}
 
 	logo := "$" //default

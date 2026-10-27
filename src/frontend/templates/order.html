@@ -18,11 +18,6 @@
 
     {{ template "header" . }}
 
-    <div {{ with $.platform_css }} class="{{.}}" {{ end }}>
-        <span class="platform-flag">
-            {{$.platform_name}}
-        </span>
-    </div>
 
     <main role="main" class="order">
 
@@ -30,11 +25,11 @@
             <div class="row">
                 <div class="col-12 text-center">
                     <h3>
-                        Your order is complete!
+                        Your simulated AVOS order is complete!
                     </h3>
                 </div>
                 <div class="col-12 text-center">
-                    <p>We've sent you a confirmation email.</p>
+                    <p>A simulated confirmation was prepared. No payment was taken and no shipment will be sent.</p>
                 </div>
             </div>
             <div class="row border-bottom-solid padding-y-24">
@@ -47,7 +42,7 @@
             </div>
             <div class="row border-bottom-solid padding-y-24">
                 <div class="col-6 pl-md-0">
-                    Tracking #
+                    Simulated tracking #
                 </div>
                 <div class="col-6 pr-md-0 text-right">
                     {{.order.ShippingTrackingId}}
@@ -55,7 +50,7 @@
             </div>
             <div class="row padding-y-24">
                 <div class="col-6 pl-md-0">
-                    Total Paid
+                    Simulated total
                 </div>
                 <div class="col-6 pr-md-0 text-right">
                     {{renderMoney .total_paid}}

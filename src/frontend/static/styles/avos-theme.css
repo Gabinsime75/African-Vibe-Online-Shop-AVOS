@@ -55,15 +55,16 @@ main,
 
 .home-mobile-hero-banner {
   height: 240px;
-  background: var(--avos-forest) url(/static/images/AVOS_HeroPattern.svg) no-repeat center;
+  background: var(--avos-forest) url(../images/AVOS_HeroPattern.svg) no-repeat center;
   background-size: cover;
 }
 
 .home-desktop-left-image {
-  background: var(--avos-forest) url(/static/images/AVOS_HeroPattern.svg) no-repeat center;
+  background: var(--avos-forest) url(../images/AVOS_HeroPattern.svg) no-repeat center;
   background-size: cover;
 }
 
+.hot-products-row h2,
 .hot-products-row h3 {
   color: var(--avos-forest);
   font-weight: 700;
@@ -177,4 +178,17 @@ footer .footer-top a {
     align-items: flex-start;
     flex-direction: column;
   }
+}
+
+.avos-storefront-intro {
+  padding: 2rem 0 0;
+}
+
+.avos-storefront-intro h1 {
+  color: var(--avos-forest);
+}
+
+.avos-storefront-intro p {
+  color: var(--avos-muted);
+  max-width: 48rem;
 }
