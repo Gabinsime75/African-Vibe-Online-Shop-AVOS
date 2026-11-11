@@ -4,7 +4,7 @@ components:
 images:
 - name: frontend
   newName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/frontend
-  newTag: c3c9b359859156a29b7f51c01f17d20183313604
+  newTag: a4d9371090697e430b368bc6304944fb372991e8
 kind: Kustomization
 namespace: avos-dev
 replicas:
