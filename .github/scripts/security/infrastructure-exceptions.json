@@ -18,15 +18,6 @@
     "review": "Review origin access restrictions when completing customer-facing edge security."
   },
   {
-    "id": "AWS-0054",
-    "target": "edge-security/alb.tf",
-    "expires": "2026-10-30",
-    "owner": "PlatformEngineering",
-    "reason": "The initial HTTP listener supports temporary platform validation.",
-    "controls": "Administrator CIDR restrictions limit exposure. HTTP remains unencrypted; no sensitive test payloads are permitted.",
-    "review": "Reviewed live ALB sg-0ae6d9c6be978aa09: inbound HTTP is restricted to two administrator /32 CIDRs. HTTP remains unencrypted. Replace with HTTPS before customer traffic; reassess this temporary acceptance by 2026-10-30."
-  },
-  {
     "id": "KSV-0108",
     "target": "platform-services/integration-tests/external-dns/service.yaml",
     "expires": "2026-11-15",
