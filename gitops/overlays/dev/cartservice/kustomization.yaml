@@ -6,7 +6,7 @@ resources:
 images:
 - name: cartservice
   newName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/cartservice
-  newTag: 05837921152908dac6ac7879f706845fc5eb84dc
+  newTag: c3c9b359859156a29b7f51c01f17d20183313604
 replicas:
 - name: cartservice
   count: 1
