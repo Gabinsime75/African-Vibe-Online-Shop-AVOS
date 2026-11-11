@@ -284,7 +284,7 @@ main {
 
 @media (min-width: 992px) {
   .home .container-fluid {
-    height: calc(100vh - 91px); /* 91px is the height of the top/header bars. */
+    height: auto; /* Let the catalog grow so the footer follows every product row. */
   }
   .home .container-fluid > .row > .col-4 {
     height: calc(100vh - 91px);
