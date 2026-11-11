@@ -56,6 +56,12 @@ resource "aws_eks_addon" "vpc_cni" {
 }
 
 resource "aws_eks_addon" "kube_proxy" {
+
+  # Required AVOS proxy mode; runtime validation follows node creation.
+  configuration_values = jsonencode({
+    mode = "ipvs"
+  })
+
   cluster_name  = aws_eks_cluster.this.name
   addon_name    = "kube-proxy"
   addon_version = var.addon_versions["kube-proxy"]

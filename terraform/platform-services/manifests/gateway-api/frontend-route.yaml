@@ -1,0 +1,22 @@
+# AVOS storefront routing through the existing Istio Gateway.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: avos-storefront
+  namespace: avos-dev
+spec:
+  parentRefs:
+    - name: avos-gateway
+      namespace: istio-ingress
+      sectionName: http
+  hostnames:
+    - shop.avos-dev.cloudhusller.com
+    - origin.avos-dev.cloudhusller.com
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: frontend
+          port: 8080

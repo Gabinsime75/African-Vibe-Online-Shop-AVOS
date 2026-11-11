@@ -15,4 +15,4 @@ spec:
         dns01:
           route53:
             region: us-east-2
-            hostedZoneID: Z08118211LIG93KC7E5CI
+            hostedZoneID: Z02721832HMVLQDSYJ5CO

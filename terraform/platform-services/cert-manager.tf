@@ -69,14 +69,14 @@ data "aws_iam_policy_document" "cert_manager" {
     sid       = "ReadDevelopmentHostedZoneRecords"
     effect    = "Allow"
     actions   = ["route53:ListResourceRecordSets"]
-    resources = ["arn:aws:route53:::hostedzone/Z08118211LIG93KC7E5CI"]
+    resources = ["arn:aws:route53:::hostedzone/Z02721832HMVLQDSYJ5CO"]
   }
 
   statement {
     sid       = "ManageDevelopmentACMEChallenges"
     effect    = "Allow"
     actions   = ["route53:ChangeResourceRecordSets"]
-    resources = ["arn:aws:route53:::hostedzone/Z08118211LIG93KC7E5CI"]
+    resources = ["arn:aws:route53:::hostedzone/Z02721832HMVLQDSYJ5CO"]
 
     condition {
       test     = "ForAllValues:StringEquals"
