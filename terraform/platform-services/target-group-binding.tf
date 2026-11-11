@@ -13,7 +13,7 @@ resource "kubernetes_manifest" "istio_target_group_binding" {
     }
 
     spec = {
-      targetGroupARN = "arn:aws:elasticloadbalancing:us-east-2:396913735153:targetgroup/avos-dev-istio/a371195a4260063f"
+      targetGroupARN = "arn:aws:elasticloadbalancing:us-east-2:396913735153:targetgroup/avos-dev-istio/444e197951f38851"
       targetType     = "ip"
       vpcID          = data.aws_vpc.this.id
 

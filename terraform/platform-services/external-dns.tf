@@ -3,7 +3,7 @@
 # =============================================================================
 
 locals {
-  external_dns_zone_id         = "Z08118211LIG93KC7E5CI"
+  external_dns_zone_id         = "Z02721832HMVLQDSYJ5CO"
   external_dns_zone_domain     = "cloudhusller.com"
   external_dns_domain_scope    = "avos-dev.cloudhusller.com"
   external_dns_namespace       = "kube-system"

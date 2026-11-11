@@ -1,13 +1,13 @@
 locals {
-  vpc_id = "vpc-03d5b15ed57a8815f"
+  vpc_id = "vpc-0230b5b4745d680b5"
 
   public_subnet_ids = [
-    "subnet-0f29bd6e07dad9807",
-    "subnet-0712b8b0e7d7a001e",
-    "subnet-0f2c41b2eea093d59"
+    "subnet-023fec93281764a1c",
+    "subnet-017f4cf7f6ef5d1e7",
+    "subnet-0ad55953af1866ed7"
   ]
 
-  gateway_node_security_group_id = "sg-0a3af7abfe79fc59a"
+  gateway_node_security_group_id = "sg-0d9a4383586b1ecea"
 
   gateway_ports = {
     traffic = 80
