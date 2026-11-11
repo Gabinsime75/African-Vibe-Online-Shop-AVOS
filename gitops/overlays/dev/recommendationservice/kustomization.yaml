@@ -6,7 +6,7 @@ resources:
 images:
 - name: recommendationservice
   newName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/recommendationservice
-  newTag: c3c9b359859156a29b7f51c01f17d20183313604
+  newTag: 3ca69eec747c42c01bb5c70becf31fa520d3e1ff
 replicas:
 - name: recommendationservice
   count: 1
