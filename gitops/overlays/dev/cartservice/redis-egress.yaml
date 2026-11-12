@@ -1,0 +1,22 @@
+# Additional cart-only egress; existing DNS access remains in the base policy.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: cartservice-redis-egress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: cartservice
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 10.20.128.0/20
+        - ipBlock:
+            cidr: 10.20.144.0/20
+        - ipBlock:
+            cidr: 10.20.160.0/20
+      ports:
+        - protocol: TCP
+          port: 6379

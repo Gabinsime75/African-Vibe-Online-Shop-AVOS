@@ -3,6 +3,8 @@ kind: Kustomization
 namespace: avos-dev
 resources:
 - ../../../base/cartservice
+- external-secret.yaml
+- redis-egress.yaml
 images:
 - name: cartservice
   newName: 396913735153.dkr.ecr.us-east-2.amazonaws.com/avos/dev/cartservice
@@ -11,6 +13,6 @@ replicas:
 - name: cartservice
   count: 1
 patches:
-- patch: '{"apiVersion": "apps/v1", "kind": "Deployment", "metadata": {"name": "cartservice"}, "spec": {"template": {"spec": {"containers": [{"name": "cartservice", "env": [{"name": "ASPNETCORE_ENVIRONMENT", "value": "Development"}, {"name": "CART_STORE", "value": "memory"}]}]}}}}'
+- patch: '{"apiVersion": "apps/v1", "kind": "Deployment", "metadata": {"name": "cartservice"}, "spec": {"template": {"spec": {"containers": [{"name": "cartservice", "env": [{"name": "ASPNETCORE_ENVIRONMENT", "value": "Production"}, {"name": "CART_STORE", "value": "redis"}, {"name": "REDIS_TLS", "value": "true"}, {"name": "REDIS_ADDR", "valueFrom": {"secretKeyRef": {"name": "cart-redis", "key": "address"}}}, {"name": "REDIS_PASSWORD", "valueFrom": {"secretKeyRef": {"name": "cart-redis", "key": "password"}}}]}]}}}}'
 components:
 - ../../../components/dev-reconciliation
